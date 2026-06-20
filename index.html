@@ -153,7 +153,7 @@
             margin: 0 auto 24px;
             border-radius: 2px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
-            padding: 18mm 16mm;
+            padding: 20mm 20mm 24mm;   /* matches PDF: 20mm all round */
             position: relative;
             overflow: hidden;
         }
@@ -179,7 +179,10 @@
             line-height: 1.75;
             color: var(--ink);
             word-wrap: break-word;
-            min-height: calc(var(--page-h) - 36mm - 14px);
+            overflow-wrap: break-word;
+            hyphens: auto;
+            -webkit-hyphens: auto;
+            min-height: calc(var(--page-h) - 44mm - 14px);
             caret-color: var(--amber);
         }
 
@@ -666,7 +669,7 @@ function redoAction() { editor.focus(); document.execCommand('redo'); markDirty(
 // ── PAGE COUNTER ──────────────────────────────────────────
 function updateCounter() {
     const words = (editor.innerText.match(/\S+/g) || []).length;
-    const pages = Math.max(1, Math.ceil(words / 350));
+    const pages = Math.max(1, Math.ceil(words / 300));
     pageEl.textContent = `~${pages} p`;
 }
 
