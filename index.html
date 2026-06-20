@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PageCraft — Book Writer</title>
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='2' width='14' height='20' rx='2' fill='%23b45309'/%3E%3Crect x='6' y='5' width='10' height='1.5' rx='0.5' fill='%23fef3c7'/%3E%3Crect x='6' y='8' width='10' height='1.5' rx='0.5' fill='%23fef3c7'/%3E%3Crect x='6' y='11' width='7' height='1.5' rx='0.5' fill='%23fef3c7'/%3E%3C/svg%3E">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1c1410">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --ink:      #1c1410;
+            --amber:    #b45309;
+            --amber-lt: #d97706;
+            --cream:    #fef9f0;
+            --page:     #ffffff;
+            --rule:     #e8e0d0;
+            --muted:    #9c8b78;
+            --toolbar:  #1c1410;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bot: env(safe-area-inset-bottom, 0px);
+            /* A4 ratio in screen pixels — feels like real paper */
+            --page-w:   min(210mm, 96vw);
+            --page-h:   calc(var(--page-w) * 1.4142);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            background: #2a2118;
+            color: var(--ink);
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        /* ── HEADER ── */
+        header {
+            background: var(--toolbar);
+            padding: calc(10px + var(--safe-top)) 14px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 50;
+            border-bottom: 2px solid var(--amber);
+        }
+
+        #doc-title {
+            flex: 1;
+            font-family: Georgia, serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fef3c7;
+            outline: none;
+            border-bottom: 1px dashed rgba(255,255,255,0.25);
+            padding-bottom: 2px;
+            letter-spacing: 0.02em;
+        }
+        #doc-title:focus { border-bottom: 1px solid var(--amber); }
+
+        #page-counter {
+            font-size: 0.75rem;
+            color: var(--muted);
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+        }
+
+        #save-badge {
+            font-size: 0.7rem;
+            color: var(--amber-lt);
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ── FORMAT BAR (pinned B I U) ── */
+        #format-bar {
+            background: #271e16;
+            border-bottom: 1px solid #3a2d20;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 49;
+        }
+
+        .fmt-label {
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-family: 'Courier New', monospace;
+            margin-right: 4px;
+        }
+
+        .f-btn {
+            background: #3a2d20;
+            border: 1px solid #5a4530;
+            color: #fef3c7;
+            width: 38px;
+            height: 34px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+            font-family: Georgia, serif;
+        }
+        .f-btn:active, .f-btn.active {
+            background: var(--amber);
+            color: #fff;
+            border-color: var(--amber);
+        }
+        .f-btn.f-bold  { font-style: normal; font-weight: 900; }
+        .f-btn.f-italic { font-style: italic; font-weight: 400; }
+        .f-btn.f-under { text-decoration: underline; }
+
+        .fmt-sep {
+            width: 1px;
+            height: 24px;
+            background: #3a2d20;
+            margin: 0 4px;
+        }
+
+        /* ── SCROLL CANVAS ── */
+        #scroll-canvas {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #2a2118;
+            padding: 20px 0 12px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ── A4 PAGE CARD ── */
+        .a4-page {
+            width: var(--page-w);
+            min-height: var(--page-h);
+            background: var(--page);
+            margin: 0 auto 24px;
+            border-radius: 2px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
+            padding: 18mm 16mm;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-num-label {
+            position: absolute;
+            bottom: 8mm;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9pt;
+            color: #bbb;
+            font-family: 'Courier New', monospace;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* ── THE EDITOR ITSELF ── */
+        #editor {
+            width: 100%;
+            outline: none;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.75;
+            color: var(--ink);
+            word-wrap: break-word;
+            min-height: calc(var(--page-h) - 36mm - 14px);
+            caret-color: var(--amber);
+        }
+
+        #editor:empty::before {
+            content: attr(data-placeholder);
+            color: #c0b09a;
+            pointer-events: none;
+            font-style: italic;
+        }
+
+        #editor h1 { font-size: 22pt; margin: 0 0 14px; font-family: Georgia, serif; font-weight: 700; line-height: 1.3; }
+        #editor h2 { font-size: 16pt; margin: 16px 0 10px; font-weight: 700; line-height: 1.4; }
+        #editor h3 { font-size: 13pt; margin: 14px 0 8px; font-weight: 700; }
+        #editor p  { margin: 0 0 10px; }
+        #editor blockquote {
+            border-left: 3px solid var(--amber);
+            padding-left: 14px;
+            margin: 14px 0;
+            color: #5a4530;
+            font-style: italic;
+        }
+        #editor ul, #editor ol { padding-left: 22px; margin: 10px 0; }
+        #editor li { margin-bottom: 4px; }
+        #editor img { max-width: 100%; height: auto; display: block; margin: 14px auto; border-radius: 2px; }
+
+        /* ── BOTTOM TOOLBAR ── */
+        #bottom-toolbar {
+            background: var(--toolbar);
+            border-top: 1px solid #3a2d20;
+            padding: 8px 10px calc(8px + var(--safe-bot));
+            z-index: 48;
+        }
+
+        .tool-row {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tool-row::-webkit-scrollbar { display: none; }
+
+        .t-btn {
+            background: #2e2218;
+            border: 1px solid #4a3828;
+            color: #d4c4a8;
+            padding: 9px 13px;
+            border-radius: 7px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Courier New', monospace;
+            transition: background 0.15s;
+        }
+        .t-btn:active { background: var(--amber); color: #fff; border-color: var(--amber); }
+        .t-btn.t-accent { background: var(--amber); color: #fff; border-color: var(--amber); }
+
+        /* ── EXPORT DRAWER ── */
+        #export-drawer {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            align-items: flex-end;
+        }
+        #export-drawer.open { display: flex; }
+
+        #drawer-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+        }
+
+        #drawer-panel {
+            position: relative;
+            width: 100%;
+            background: #1c1410;
+            border-radius: 18px 18px 0 0;
+            padding: 20px 20px calc(20px + var(--safe-bot));
+            border-top: 2px solid var(--amber);
+        }
+
+        .drawer-title {
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .export-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .exp-btn {
+            background: #2e2218;
+            border: 1px solid #4a3828;
+            color: #fef3c7;
+            padding: 16px 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-family: Georgia, serif;
+            transition: background 0.15s;
+        }
+        .exp-btn span.ext { font-size: 1.4rem; }
+        .exp-btn span.lbl { font-size: 0.72rem; color: var(--muted); font-family: 'Courier New', monospace; font-weight: 400; }
+        .exp-btn:active { background: var(--amber); border-color: var(--amber); }
+        .exp-btn.full-width { grid-column: 1 / -1; }
+
+        #drawer-cancel {
+            width: 100%;
+            margin-top: 12px;
+            background: transparent;
+            border: 1px solid #3a2d20;
+            color: var(--muted);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ── PRINT STYLES ── */
+        @media print {
+            body { background: white; }
+            header, #format-bar, #bottom-toolbar, #export-drawer { display: none !important; }
+            #scroll-canvas { overflow: visible; padding: 0; }
+            .a4-page {
+                box-shadow: none;
+                border-radius: 0;
+                margin: 0;
+                page-break-after: always;
+                width: 210mm;
+                min-height: 297mm;
+                padding: 20mm 18mm;
+            }
+            @page { size: A4; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <span contenteditable="true" id="doc-title" spellcheck="false">My Document</span>
+    <span id="page-counter">p.1</span>
+    <span id="save-badge">●</span>
+</header>
+
+<!-- FORMAT BAR — always visible, always reachable -->
+<div id="format-bar">
+    <span class="fmt-label">Format</span>
+    <button class="f-btn f-bold"   id="btn-bold"   title="Bold"      onclick="toggleFormat('bold')"><b>B</b></button>
+    <button class="f-btn f-italic" id="btn-italic" title="Italic"    onclick="toggleFormat('italic')"><i>I</i></button>
+    <button class="f-btn f-under"  id="btn-under"  title="Underline" onclick="toggleFormat('underline')"><u>U</u></button>
+    <div class="fmt-sep"></div>
+    <button class="f-btn" style="font-size:0.85rem;width:44px" title="Heading" onclick="toggleHeading()">H</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" title="Quote" onclick="toggleQuote()">"</button>
+</div>
+
+<!-- SCROLL CANVAS — pages live here -->
+<div id="scroll-canvas">
+    <div class="a4-page" id="page-1">
+        <div id="editor"
+             contenteditable="true"
+             data-placeholder="Start writing… or paste your text here."
+             role="textbox"
+             aria-multiline="true"
+             aria-label="Document editor"
+             spellcheck="true">
+        </div>
+        <span class="page-num-label">1</span>
+    </div>
+</div>
+
+<!-- BOTTOM TOOLBAR -->
+<div id="bottom-toolbar">
+    <div class="tool-row">
+        <button class="t-btn" onclick="insertImage()" title="Add image">📷 Photo</button>
+        <button class="t-btn" onclick="insertList('ul')">• List</button>
+        <button class="t-btn" onclick="insertList('ol')">1. List</button>
+        <button class="t-btn" onclick="undoAction()">↶ Undo</button>
+        <button class="t-btn" onclick="redoAction()">↷ Redo</button>
+        <button class="t-btn" onclick="importFile()">⬆ Import</button>
+        <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
+    </div>
+</div>
+
+<!-- EXPORT DRAWER -->
+<div id="export-drawer" role="dialog" aria-label="Export options">
+    <div id="drawer-backdrop" onclick="closeExport()"></div>
+    <div id="drawer-panel">
+        <div class="drawer-title">Export / Save As</div>
+        <div class="export-grid">
+            <button class="exp-btn" onclick="exportPDF()">
+                <span class="ext">📄</span>
+                PDF
+                <span class="lbl">Print-ready A4</span>
+            </button>
+            <button class="exp-btn" onclick="exportTXT()">
+                <span class="ext">📝</span>
+                TXT
+                <span class="lbl">Plain text</span>
+            </button>
+            <button class="exp-btn" onclick="exportHTML()">
+                <span class="ext">🌐</span>
+                HTML
+                <span class="lbl">Web page</span>
+            </button>
+            <button class="exp-btn" onclick="window.print()">
+                <span class="ext">🖨️</span>
+                Print
+                <span class="lbl">Browser print</span>
+            </button>
+        </div>
+        <button id="drawer-cancel" onclick="closeExport()">Cancel</button>
+    </div>
+</div>
+
+<!-- Hidden inputs -->
+<input type="file" id="img-picker"  accept="image/*"         style="display:none" onchange="handleImageFile(event)">
+<input type="file" id="file-picker" accept=".txt,.html,.md"  style="display:none" onchange="handleImportFile(event)">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
+<script>
+/* =========================================================
+   PageCraft wb7
+   Simple, breezy A4 book writer — mobile-first
+   ========================================================= */
+
+// ── SERVICE WORKER ────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+        .catch(e => console.warn('SW skipped:', e));
+}
+
+const editor   = document.getElementById('editor');
+const saveEl   = document.getElementById('save-badge');
+const pageEl   = document.getElementById('page-counter');
+const titleEl  = document.getElementById('doc-title');
+
+let db          = null;
+let dirty       = false;
+let saveTimer   = null;
+let activeFormats = new Set();
+
+// ── INIT ──────────────────────────────────────────────────
+(async function init() {
+    await openDB();
+    await loadDraft();
+    bindEvents();
+    updateCounter();
+})();
+
+// ── INDEXEDDB ─────────────────────────────────────────────
+function openDB() {
+    return new Promise((res, rej) => {
+        const req = indexedDB.open('pagecraft_v1', 1);
+        req.onupgradeneeded = e => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains('draft'))
+                d.createObjectStore('draft', { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('images'))
+                d.createObjectStore('images', { keyPath: 'id' });
+        };
+        req.onsuccess = e => { db = e.target.result; res(); };
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+
+function dbPut(store, obj) {
+    return new Promise((res, rej) => {
+        const tx  = db.transaction(store, 'readwrite');
+        const req = tx.objectStore(store).put(obj);
+        req.onsuccess = () => res();
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+
+function dbGet(store, key) {
+    return new Promise((res) => {
+        const tx  = db.transaction(store, 'readonly');
+        const req = tx.objectStore(store).get(key);
+        req.onsuccess = () => res(req.result || null);
+        req.onerror   = () => res(null);
+    });
+}
+
+// ── SAVE ──────────────────────────────────────────────────
+function markDirty() {
+    dirty = true;
+    saveEl.textContent = '●';
+    saveEl.style.color = '#d97706';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDraft, 1200);
+}
+
+async function saveDraft() {
+    if (!db || !dirty) return;
+    try {
+        const clone = editor.cloneNode(true);
+        // Blank out blob src before storing — reload from images store
+        clone.querySelectorAll('img[data-img-id]').forEach(img => {
+            img.src = '';
+        });
+        await dbPut('draft', {
+            id:      'current',
+            title:   titleEl.innerText.trim() || 'My Document',
+            html:    DOMPurify.sanitize(clone.innerHTML),
+            saved:   Date.now()
+        });
+        dirty = false;
+        saveEl.textContent = '✓';
+        saveEl.style.color = '#86a86b';
+    } catch(e) {
+        saveEl.textContent = '✗';
+        saveEl.style.color = '#ef4444';
+    }
+}
+
+async function loadDraft() {
+    const data = await dbGet('draft', 'current');
+    if (!data) {
+        editor.innerHTML = '<h1>Chapter One</h1><p></p>';
+        return;
+    }
+    titleEl.innerText = data.title || 'My Document';
+    editor.innerHTML  = DOMPurify.sanitize(data.html || '');
+
+    // Rehydrate images from IndexedDB
+    for (const img of editor.querySelectorAll('img[data-img-id]')) {
+        const blob = await dbGet('images', img.getAttribute('data-img-id'));
+        if (blob) {
+            const url = URL.createObjectURL(blob.data);
+            img.src   = url;
+        } else {
+            img.remove();
+        }
+    }
+    saveEl.textContent = '✓';
+    saveEl.style.color = '#86a86b';
+}
+
+// ── EVENTS ────────────────────────────────────────────────
+function bindEvents() {
+    editor.addEventListener('input', () => { markDirty(); updateCounter(); });
+    titleEl.addEventListener('input', markDirty);
+
+    // Paste — strip junk, keep text + basic tags
+    editor.addEventListener('paste', e => {
+        e.preventDefault();
+        const html  = (e.clipboardData || window.clipboardData).getData('text/html');
+        const plain = (e.clipboardData || window.clipboardData).getData('text/plain');
+
+        let clean;
+        if (html) {
+            clean = DOMPurify.sanitize(html, {
+                ALLOWED_TAGS: ['p','br','b','strong','i','em','u','h1','h2','h3',
+                               'ul','ol','li','blockquote','img','a'],
+                ALLOWED_ATTR: ['href','src','alt']
+            });
+        } else {
+            // Plain text paste — wrap paragraphs nicely
+            clean = plain
+                .split(/\r?\n\r?\n/)
+                .map(para => {
+                    const lines = para.replace(/\r?\n/g, '<br>').trim();
+                    return lines ? `<p>${lines}</p>` : '';
+                })
+                .filter(Boolean)
+                .join('');
+        }
+
+        const range = window.getSelection().getRangeAt(0);
+        range.deleteContents();
+        const frag = document.createRange().createContextualFragment(clean);
+        range.insertNode(frag);
+        markDirty();
+        updateCounter();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+        const m = e.ctrlKey || e.metaKey;
+        if (m && e.key === 's')    { e.preventDefault(); saveDraft(); }
+        if (m && e.key === 'b')    { e.preventDefault(); toggleFormat('bold'); }
+        if (m && e.key === 'i')    { e.preventDefault(); toggleFormat('italic'); }
+        if (m && e.key === 'u')    { e.preventDefault(); toggleFormat('underline'); }
+        if (m && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoAction(); }
+        if (m && e.key === 'z' &&  e.shiftKey) { e.preventDefault(); redoAction(); }
+        if (m && e.key === 'y')    { e.preventDefault(); redoAction(); }
+    });
+
+    // Track active formats for button highlight
+    editor.addEventListener('keyup',    updateFormatState);
+    editor.addEventListener('mouseup',  updateFormatState);
+    editor.addEventListener('touchend', updateFormatState);
+}
+
+// ── FORMAT BAR ────────────────────────────────────────────
+function toggleFormat(cmd) {
+    editor.focus();
+    document.execCommand(cmd, false, null);
+    updateFormatState();
+    markDirty();
+}
+
+function toggleHeading() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    let node = sel.focusNode;
+    if (node && node.nodeType === 3) node = node.parentNode;
+    // Walk up to find block-level parent inside editor
+    while (node && node.parentNode !== editor) node = node.parentNode;
+    if (!node) return;
+    const tag = node.tagName ? node.tagName.toLowerCase() : 'p';
+    const next = tag === 'p' ? 'h1' : tag === 'h1' ? 'h2' : tag === 'h2' ? 'h3' : 'p';
+    const newEl = document.createElement(next);
+    newEl.innerHTML = node.innerHTML;
+    node.replaceWith(newEl);
+    // Put cursor in new element
+    const r = document.createRange();
+    r.selectNodeContents(newEl);
+    r.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    markDirty();
+}
+
+function toggleQuote() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    let node = sel.focusNode;
+    if (node && node.nodeType === 3) node = node.parentNode;
+    while (node && node.parentNode !== editor) node = node.parentNode;
+    if (!node) return;
+    if (node.tagName && node.tagName.toLowerCase() === 'blockquote') {
+        const p = document.createElement('p');
+        p.innerHTML = node.innerHTML;
+        node.replaceWith(p);
+    } else {
+        const bq = document.createElement('blockquote');
+        bq.innerHTML = node.innerHTML;
+        node.replaceWith(bq);
+    }
+    markDirty();
+}
+
+function updateFormatState() {
+    document.getElementById('btn-bold').classList.toggle('active',
+        document.queryCommandState('bold'));
+    document.getElementById('btn-italic').classList.toggle('active',
+        document.queryCommandState('italic'));
+    document.getElementById('btn-under').classList.toggle('active',
+        document.queryCommandState('underline'));
+}
+
+// ── LISTS ─────────────────────────────────────────────────
+function insertList(type) {
+    editor.focus();
+    document.execCommand(type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList');
+    markDirty();
+}
+
+// ── UNDO / REDO ───────────────────────────────────────────
+function undoAction() { editor.focus(); document.execCommand('undo'); markDirty(); }
+function redoAction() { editor.focus(); document.execCommand('redo'); markDirty(); }
+
+// ── PAGE COUNTER ──────────────────────────────────────────
+function updateCounter() {
+    const words = (editor.innerText.match(/\S+/g) || []).length;
+    const pages = Math.max(1, Math.ceil(words / 350));
+    pageEl.textContent = `~${pages} p`;
+}
+
+// ── IMAGES ────────────────────────────────────────────────
+function insertImage() {
+    document.getElementById('img-picker').click();
+}
+
+async function handleImageFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+
+    // Compress
+    const blob = await compressImage(file, 1200, 0.82);
+    const id   = 'img_' + Date.now();
+    await dbPut('images', { id, data: blob });
+
+    const url  = URL.createObjectURL(blob);
+    const img  = document.createElement('img');
+    img.src    = url;
+    img.setAttribute('data-img-id', id);
+    img.style.maxWidth = '100%';
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(img);
+    } else {
+        editor.appendChild(img);
+    }
+    markDirty();
+    updateCounter();
+}
+
+function compressImage(file, maxDim, quality) {
+    return new Promise(res => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const imgEl = new Image();
+            imgEl.onload = () => {
+                let { width, height } = imgEl;
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) { height = Math.round(height * maxDim / width);  width  = maxDim; }
+                    else                { width  = Math.round(width  * maxDim / height); height = maxDim; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width  = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(imgEl, 0, 0, width, height);
+                canvas.toBlob(b => res(b), 'image/jpeg', quality);
+            };
+            imgEl.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// ── IMPORT ────────────────────────────────────────────────
+function importFile() {
+    document.getElementById('file-picker').click();
+}
+
+function handleImportFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const raw = ev.target.result;
+        const ext = file.name.split('.').pop().toLowerCase();
+        let html = '';
+        if (ext === 'md' || ext === 'markdown') {
+            html = marked.parse(raw);
+        } else if (ext === 'html' || ext === 'htm') {
+            const doc = new DOMParser().parseFromString(raw, 'text/html');
+            html = doc.body.innerHTML;
+        } else {
+            // Plain text — wrap double-newline paragraphs
+            html = raw
+                .split(/\r?\n\r?\n/)
+                .map(p => p.trim() ? `<p>${p.replace(/\r?\n/g, '<br>')}</p>` : '')
+                .filter(Boolean)
+                .join('');
+        }
+        editor.innerHTML = DOMPurify.sanitize(html);
+        titleEl.innerText = file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
+        markDirty();
+        updateCounter();
+    };
+    reader.readAsText(file);
+}
+
+// ── EXPORT DRAWER ─────────────────────────────────────────
+function openExport()  { document.getElementById('export-drawer').classList.add('open'); }
+function closeExport() { document.getElementById('export-drawer').classList.remove('open'); }
+
+// TXT
+function exportTXT() {
+    closeExport();
+    const text = editor.innerText;
+    const blob  = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    download(blob, getTitle() + '.txt');
+}
+
+// HTML
+function exportHTML() {
+    closeExport();
+    const body = editor.innerHTML;
+    const css  = `body{font-family:Georgia,serif;font-size:12pt;line-height:1.75;max-width:72ch;margin:2cm auto;color:#1c1410}
+h1{font-size:22pt}h2{font-size:16pt}h3{font-size:13pt}
+blockquote{border-left:3px solid #b45309;padding-left:14px;font-style:italic;color:#5a4530}
+img{max-width:100%;display:block;margin:14px auto}`;
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>${getTitle()}</title><style>${css}</style></head>
+<body><h1>${titleEl.innerText}</h1>${body}</body></html>`;
+    const blob  = new Blob([html], { type: 'text/html;charset=utf-8' });
+    download(blob, getTitle() + '.html');
+}
+
+// PDF via jsPDF
+async function exportPDF() {
+    closeExport();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const W = 210, H = 297, M = 20;
+    const TW = W - M * 2;
+    let y = M, pageNum = 1;
+
+    function addPageNum() {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(150);
+        doc.text(String(pageNum), W / 2, H - 8, { align: 'center' });
+        doc.setTextColor(0);
+    }
+
+    function checkNewPage(needed = 8) {
+        if (y + needed > H - M) {
+            addPageNum();
+            doc.addPage();
+            pageNum++;
+            y = M;
+        }
+    }
+
+    const title = titleEl.innerText.trim();
+    if (title && title !== 'My Document') {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(22);
+        const tLines = doc.splitTextToSize(title, TW);
+        tLines.forEach(l => { checkNewPage(12); doc.text(l, M, y); y += 12; });
+        y += 6;
+    }
+
+    const nodes = Array.from(editor.childNodes);
+
+    for (const node of nodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const t = node.textContent.trim();
+            if (!t) continue;
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+            const lines = doc.splitTextToSize(t, TW);
+            lines.forEach(l => { checkNewPage(6); doc.text(l, M, y); y += 6; });
+            y += 3;
+            continue;
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+        const tag = node.tagName.toLowerCase();
+
+        // Images
+        if (tag === 'img' && node.getAttribute('data-img-id')) {
+            const blob = await dbGet('images', node.getAttribute('data-img-id'));
+            if (blob) {
+                const b64 = await blobToB64(blob.data);
+                const ih  = 55;
+                checkNewPage(ih + 4);
+                try { doc.addImage(b64, 'JPEG', M, y, TW, ih); y += ih + 6; } catch(e) {}
+            }
+            continue;
+        }
+
+        // Headings
+        if (tag === 'h1') {
+            y += 4;
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+            const ls = doc.splitTextToSize(node.innerText || '', TW);
+            ls.forEach(l => { checkNewPage(12); doc.text(l, M, y); y += 12; });
+            y += 4;
+            continue;
+        }
+        if (tag === 'h2') {
+            y += 3;
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
+            const ls = doc.splitTextToSize(node.innerText || '', TW);
+            ls.forEach(l => { checkNewPage(9); doc.text(l, M, y); y += 9; });
+            y += 3;
+            continue;
+        }
+        if (tag === 'h3') {
+            y += 2;
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+            const ls = doc.splitTextToSize(node.innerText || '', TW);
+            ls.forEach(l => { checkNewPage(7); doc.text(l, M, y); y += 7; });
+            y += 2;
+            continue;
+        }
+
+        // Blockquote
+        if (tag === 'blockquote') {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(11);
+            doc.setTextColor(90, 69, 48);
+            const ls = doc.splitTextToSize(node.innerText || '', TW - 8);
+            ls.forEach(l => { checkNewPage(6); doc.text(l, M + 6, y); y += 6; });
+            doc.setTextColor(0);
+            y += 3;
+            continue;
+        }
+
+        // Lists
+        if (tag === 'ul' || tag === 'ol') {
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+            const items = node.querySelectorAll('li');
+            let idx = 1;
+            items.forEach(li => {
+                const bullet = tag === 'ol' ? `${idx++}.` : '•';
+                const text   = li.innerText.trim();
+                const ls     = doc.splitTextToSize(text, TW - 10);
+                ls.forEach((l, i) => {
+                    checkNewPage(6);
+                    if (i === 0) doc.text(bullet, M + 2, y);
+                    doc.text(l, M + 8, y);
+                    y += 6;
+                });
+            });
+            y += 3;
+            continue;
+        }
+
+        // Paragraph — handle inline bold/italic/underline
+        const text = node.innerText ? node.innerText.trim() : '';
+        if (!text) { y += 4; continue; }
+
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+        const ls = doc.splitTextToSize(text, TW);
+        ls.forEach(l => { checkNewPage(6); doc.text(l, M, y); y += 6; });
+        y += 3;
+    }
+
+    addPageNum();
+    doc.save(getTitle() + '.pdf');
+}
+
+function blobToB64(blob) {
+    return new Promise(res => {
+        const r = new FileReader();
+        r.onloadend = () => res(r.result);
+        r.readAsDataURL(blob);
+    });
+}
+
+function getTitle() {
+    return (titleEl.innerText.trim() || 'document').replace(/\s+/g, '_');
+}
+
+function download(blob, name) {
+    const a = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = name;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+</script>
+</body>
+</html>
