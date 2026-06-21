@@ -27,7 +27,6 @@
             --toolbar:  #1c1410;
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bot: env(safe-area-inset-bottom, 0px);
-            /* A4 ratio in screen pixels — feels like real paper */
             --page-w:   min(210mm, 96vw);
             --page-h:   calc(var(--page-w) * 1.4142);
         }
@@ -44,7 +43,6 @@
             overflow: hidden;
         }
 
-        /* ── HEADER ── */
         header {
             background: var(--toolbar);
             padding: calc(10px + var(--safe-top)) 14px 10px;
@@ -82,7 +80,6 @@
             font-family: 'Courier New', monospace;
         }
 
-        /* ── FORMAT BAR (pinned B I U) ── */
         #format-bar {
             background: #271e16;
             border-bottom: 1px solid #3a2d20;
@@ -118,6 +115,8 @@
             transition: background 0.15s, color 0.15s;
             flex-shrink: 0;
             font-family: Georgia, serif;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .f-btn:active, .f-btn.active {
             background: var(--amber);
@@ -135,7 +134,6 @@
             margin: 0 4px;
         }
 
-        /* ── SCROLL CANVAS ── */
         #scroll-canvas {
             flex: 1;
             overflow-y: auto;
@@ -145,7 +143,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* ── A4 PAGE CARD ── */
         .a4-page {
             width: var(--page-w);
             min-height: var(--page-h);
@@ -153,7 +150,7 @@
             margin: 0 auto 24px;
             border-radius: 2px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
-            padding: 20mm 20mm 24mm;   /* matches PDF: 20mm all round */
+            padding: 20mm 20mm 24mm;
             position: relative;
             overflow: hidden;
         }
@@ -170,7 +167,6 @@
             user-select: none;
         }
 
-        /* ── THE EDITOR ITSELF ── */
         #editor {
             width: 100%;
             outline: none;
@@ -208,7 +204,6 @@
         #editor li { margin-bottom: 4px; }
         #editor img { max-width: 100%; height: auto; display: block; margin: 14px auto; border-radius: 2px; }
 
-        /* ── BOTTOM TOOLBAR ── */
         #bottom-toolbar {
             background: var(--toolbar);
             border-top: 1px solid #3a2d20;
@@ -245,7 +240,6 @@
         .t-btn:active { background: var(--amber); color: #fff; border-color: var(--amber); }
         .t-btn.t-accent { background: var(--amber); color: #fff; border-color: var(--amber); }
 
-        /* ── EXPORT DRAWER ── */
         #export-drawer {
             position: fixed;
             inset: 0;
@@ -320,7 +314,6 @@
             font-family: 'Courier New', monospace;
         }
 
-        /* ── PRINT STYLES ── */
         @media print {
             body { background: white; }
             header, #format-bar, #bottom-toolbar, #export-drawer { display: none !important; }
@@ -340,25 +333,23 @@
 </head>
 <body>
 
-<!-- HEADER -->
 <header>
     <span contenteditable="true" id="doc-title" spellcheck="false">My Document</span>
     <span id="page-counter">p.1</span>
     <span id="save-badge">●</span>
 </header>
 
-<!-- FORMAT BAR — always visible, always reachable -->
 <div id="format-bar">
     <span class="fmt-label">Format</span>
-    <button class="f-btn f-bold"   id="btn-bold"   title="Bold"      onclick="toggleFormat('bold')"><b>B</b></button>
-    <button class="f-btn f-italic" id="btn-italic" title="Italic"    onclick="toggleFormat('italic')"><i>I</i></button>
-    <button class="f-btn f-under"  id="btn-under"  title="Underline" onclick="toggleFormat('underline')"><u>U</u></button>
+    <!-- Added onmousedown handlers to prevent loss of focus and text selection -->
+    <button class="f-btn f-bold"   id="btn-bold"   title="Bold"      onmousedown="event.preventDefault(); toggleFormat('bold');"><b>B</b></button>
+    <button class="f-btn f-italic" id="btn-italic" title="Italic"    onmousedown="event.preventDefault(); toggleFormat('italic');"><i>I</i></button>
+    <button class="f-btn f-under"  id="btn-under"  title="Underline" onmousedown="event.preventDefault(); toggleFormat('underline');"><u>U</u></button>
     <div class="fmt-sep"></div>
-    <button class="f-btn" style="font-size:0.85rem;width:44px" title="Heading" onclick="toggleHeading()">H</button>
-    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" title="Quote" onclick="toggleQuote()">"</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px" title="Heading" onmousedown="event.preventDefault(); toggleHeading();">H</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" title="Quote" onmousedown="event.preventDefault(); toggleQuote();">"</button>
 </div>
 
-<!-- SCROLL CANVAS — pages live here -->
 <div id="scroll-canvas">
     <div class="a4-page" id="page-1">
         <div id="editor"
@@ -373,20 +364,18 @@
     </div>
 </div>
 
-<!-- BOTTOM TOOLBAR -->
 <div id="bottom-toolbar">
     <div class="tool-row">
-        <button class="t-btn" onclick="insertImage()" title="Add image">📷 Photo</button>
-        <button class="t-btn" onclick="insertList('ul')">• List</button>
-        <button class="t-btn" onclick="insertList('ol')">1. List</button>
-        <button class="t-btn" onclick="undoAction()">↶ Undo</button>
-        <button class="t-btn" onclick="redoAction()">↷ Redo</button>
-        <button class="t-btn" onclick="importFile()">⬆ Import</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); insertImage();" title="Add image">📷 Photo</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); insertList('ul');">• List</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); insertList('ol');">1. List</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); undoAction();">↶ Undo</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); redoAction();">↷ Redo</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); importFile();">⬆ Import</button>
         <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
     </div>
 </div>
 
-<!-- EXPORT DRAWER -->
 <div id="export-drawer" role="dialog" aria-label="Export options">
     <div id="drawer-backdrop" onclick="closeExport()"></div>
     <div id="drawer-panel">
@@ -417,18 +406,11 @@
     </div>
 </div>
 
-<!-- Hidden inputs -->
 <input type="file" id="img-picker"  accept="image/*"         style="display:none" onchange="handleImageFile(event)">
 <input type="file" id="file-picker" accept=".txt,.html,.md"  style="display:none" onchange="handleImportFile(event)">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
 <script>
-/* =========================================================
-   PageCraft wb7
-   Simple, breezy A4 book writer — mobile-first
-   ========================================================= */
-
-// ── SERVICE WORKER ────────────────────────────────────────
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
         .catch(e => console.warn('SW skipped:', e));
@@ -442,7 +424,7 @@ const titleEl  = document.getElementById('doc-title');
 let db          = null;
 let dirty       = false;
 let saveTimer   = null;
-let activeFormats = new Set();
+let savedRange = null;
 
 // ── INIT ──────────────────────────────────────────────────
 (async function init() {
@@ -499,7 +481,6 @@ async function saveDraft() {
     if (!db || !dirty) return;
     try {
         const clone = editor.cloneNode(true);
-        // Blank out blob src before storing — reload from images store
         clone.querySelectorAll('img[data-img-id]').forEach(img => {
             img.src = '';
         });
@@ -527,7 +508,6 @@ async function loadDraft() {
     titleEl.innerText = data.title || 'My Document';
     editor.innerHTML  = DOMPurify.sanitize(data.html || '');
 
-    // Rehydrate images from IndexedDB
     for (const img of editor.querySelectorAll('img[data-img-id]')) {
         const blob = await dbGet('images', img.getAttribute('data-img-id'));
         if (blob) {
@@ -546,7 +526,6 @@ function bindEvents() {
     editor.addEventListener('input', () => { markDirty(); updateCounter(); });
     titleEl.addEventListener('input', markDirty);
 
-    // Paste — strip junk, keep text + basic tags
     editor.addEventListener('paste', e => {
         e.preventDefault();
         const html  = (e.clipboardData || window.clipboardData).getData('text/html');
@@ -560,11 +539,16 @@ function bindEvents() {
                 ALLOWED_ATTR: ['href','src','alt']
             });
         } else {
-            // Plain text paste — wrap paragraphs nicely
             clean = plain
-                .split(/\r?\n\r?\n/)
+                .split(/
+?
+
+?
+/)
                 .map(para => {
-                    const lines = para.replace(/\r?\n/g, '<br>').trim();
+                    const lines = para.replace(/
+?
+/g, '<br>').trim();
                     return lines ? `<p>${lines}</p>` : '';
                 })
                 .filter(Boolean)
@@ -579,7 +563,6 @@ function bindEvents() {
         updateCounter();
     });
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', e => {
         const m = e.ctrlKey || e.metaKey;
         if (m && e.key === 's')    { e.preventDefault(); saveDraft(); }
@@ -591,16 +574,29 @@ function bindEvents() {
         if (m && e.key === 'y')    { e.preventDefault(); redoAction(); }
     });
 
-    // Track active formats for button highlight
-    editor.addEventListener('keyup',    updateFormatState);
-    editor.addEventListener('mouseup',  updateFormatState);
-    editor.addEventListener('touchend', updateFormatState);
+    editor.addEventListener('keyup',    () => { saveSelection(); updateFormatState(); });
+    editor.addEventListener('mouseup',  () => { saveSelection(); updateFormatState(); });
+    editor.addEventListener('touchend', () => { saveSelection(); updateFormatState(); });
+}
+
+function saveSelection() {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
+}
+
+function restoreSelection() {
+    if (!savedRange) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
 }
 
 // ── FORMAT BAR ────────────────────────────────────────────
 function toggleFormat(cmd) {
+    restoreSelection();
     editor.focus();
     document.execCommand(cmd, false, null);
+    saveSelection();
     updateFormatState();
     markDirty();
 }
@@ -610,7 +606,6 @@ function toggleHeading() {
     if (!sel.rangeCount) return;
     let node = sel.focusNode;
     if (node && node.nodeType === 3) node = node.parentNode;
-    // Walk up to find block-level parent inside editor
     while (node && node.parentNode !== editor) node = node.parentNode;
     if (!node) return;
     const tag = node.tagName ? node.tagName.toLowerCase() : 'p';
@@ -618,13 +613,33 @@ function toggleHeading() {
     const newEl = document.createElement(next);
     newEl.innerHTML = node.innerHTML;
     node.replaceWith(newEl);
-    // Put cursor in new element
+    
     const r = document.createRange();
     r.selectNodeContents(newEl);
     r.collapse(false);
     sel.removeAllRanges();
     sel.addRange(r);
     markDirty();
+}
+
+async function getImageDimensions(imgElement) {
+    return new Promise((resolve) => {
+        if (imgElement.complete && imgElement.naturalWidth) {
+            resolve({ width: imgElement.naturalWidth, height: imgElement.naturalHeight });
+            return;
+        }
+        const tempImg = new Image();
+        tempImg.onload = () => {
+            const dims = { width: tempImg.naturalWidth, height: tempImg.naturalHeight };
+            tempImg.src = '';
+            resolve(dims);
+        };
+        tempImg.onerror = () => {
+            tempImg.src = '';
+            resolve({ width: 800, height: 600 });
+        };
+        tempImg.src = imgElement.src;
+    });
 }
 
 function toggleQuote() {
@@ -683,7 +698,6 @@ async function handleImageFile(e) {
     if (!file) return;
     e.target.value = '';
 
-    // Compress
     const blob = await compressImage(file, 1200, 0.82);
     const id   = 'img_' + Date.now();
     await dbPut('images', { id, data: blob });
@@ -749,10 +763,15 @@ function handleImportFile(e) {
             const doc = new DOMParser().parseFromString(raw, 'text/html');
             html = doc.body.innerHTML;
         } else {
-            // Plain text — wrap double-newline paragraphs
             html = raw
-                .split(/\r?\n\r?\n/)
-                .map(p => p.trim() ? `<p>${p.replace(/\r?\n/g, '<br>')}</p>` : '')
+                .split(/
+?
+
+?
+/)
+                .map(p => p.trim() ? `<p>${p.replace(/
+?
+/g, '<br>')}</p>` : '')
                 .filter(Boolean)
                 .join('');
         }
@@ -768,7 +787,6 @@ function handleImportFile(e) {
 function openExport()  { document.getElementById('export-drawer').classList.add('open'); }
 function closeExport() { document.getElementById('export-drawer').classList.remove('open'); }
 
-// TXT
 function exportTXT() {
     closeExport();
     const text = editor.innerText;
@@ -776,7 +794,6 @@ function exportTXT() {
     download(blob, getTitle() + '.txt');
 }
 
-// HTML
 function exportHTML() {
     closeExport();
     const body = editor.innerHTML;
@@ -791,7 +808,16 @@ img{max-width:100%;display:block;margin:14px auto}`;
     download(blob, getTitle() + '.html');
 }
 
-// PDF via jsPDF
+function blobToB64(blob) {
+    return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onloadend = () => res(r.result);
+        r.onerror = () => rej(new Error("Base64 conversion failed"));
+        r.readAsDataURL(blob);
+    });
+}
+
+// PDF Export Engine with fixed childNodes iteration and correct text wrapper
 async function exportPDF() {
     closeExport();
     const { jsPDF } = window.jspdf;
@@ -827,35 +853,66 @@ async function exportPDF() {
         y += 6;
     }
 
-    const nodes = Array.from(editor.childNodes);
+    // Fixed query logic to safely find structural content elements non-destructively
+    const nodes = Array.from(editor.querySelectorAll('p, h1, h2, h3, blockquote, ul, ol, img'));
 
     for (const node of nodes) {
-        if (node.nodeType === Node.TEXT_NODE) {
-            const t = node.textContent.trim();
-            if (!t) continue;
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-            const lines = doc.splitTextToSize(t, TW);
-            lines.forEach(l => { checkNewPage(6); doc.text(l, M, y); y += 6; });
-            y += 3;
-            continue;
-        }
-
-        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+        if (!editor.contains(node)) continue; 
+        
         const tag = node.tagName.toLowerCase();
 
-        // Images
         if (tag === 'img' && node.getAttribute('data-img-id')) {
             const blob = await dbGet('images', node.getAttribute('data-img-id'));
             if (blob) {
-                const b64 = await blobToB64(blob.data);
-                const ih  = 55;
-                checkNewPage(ih + 4);
-                try { doc.addImage(b64, 'JPEG', M, y, TW, ih); y += ih + 6; } catch(e) {}
+                try {
+                    const b64 = await blobToB64(blob.data);
+                    const dimensions = await getImageDimensions(node);
+                    const natW = dimensions.width;
+                    const natH = dimensions.height;
+                    
+                    const absoluteMaxW = TW;
+                    const absoluteMaxH = 140; 
+                    
+                    let testIw = Math.min(absoluteMaxW, natW);
+                    let testIh = (testIw * natH) / natW;
+                    if (testIh > absoluteMaxH) {
+                        testIh = absoluteMaxH;
+                        testIw = (testIh * natW) / natH;
+                    }
+                    
+                    if (y + testIh + 6 > H - M) {
+                        addPageNum();
+                        doc.addPage();
+                        pageNum++;
+                        y = M;
+                    }
+                    
+                    const maxH = Math.min(absoluteMaxH, H - M - y - 6);
+                    let iw = Math.min(absoluteMaxW, natW);
+                    let ih = (iw * natH) / natW;
+                    
+                    if (ih > maxH) {
+                        ih = maxH;
+                        iw = (ih * natW) / natH;
+                    }
+                    
+                    checkNewPage(ih + 6);
+                    const xOff = (TW - iw) / 2;
+                    const format = blob.data.type === 'image/png' ? 'PNG' : 'JPEG';
+                    
+                    doc.addImage(b64, format, M + xOff, y, iw, ih); 
+                    y += ih + 6; 
+                } catch(e) { 
+                    console.error("PDF Image injection failed:", e); 
+                }
             }
             continue;
         }
 
-        // Headings
+        if (node.querySelector('img')) {
+            if(!node.innerText.trim()) continue;
+        }
+
         if (tag === 'h1') {
             y += 4;
             doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
@@ -881,7 +938,6 @@ async function exportPDF() {
             continue;
         }
 
-        // Blockquote
         if (tag === 'blockquote') {
             doc.setFont('helvetica', 'italic'); doc.setFontSize(11);
             doc.setTextColor(90, 69, 48);
@@ -892,7 +948,6 @@ async function exportPDF() {
             continue;
         }
 
-        // Lists
         if (tag === 'ul' || tag === 'ol') {
             doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
             const items = node.querySelectorAll('li');
@@ -912,7 +967,8 @@ async function exportPDF() {
             continue;
         }
 
-        // Paragraph — handle inline bold/italic/underline
+        if (node.parentElement.tagName.toLowerCase() === 'ul' || node.parentElement.tagName.toLowerCase() === 'ol') continue;
+
         const text = node.innerText ? node.innerText.trim() : '';
         if (!text) { y += 4; continue; }
 
@@ -924,14 +980,6 @@ async function exportPDF() {
 
     addPageNum();
     doc.save(getTitle() + '.pdf');
-}
-
-function blobToB64(blob) {
-    return new Promise(res => {
-        const r = new FileReader();
-        r.onloadend = () => res(r.result);
-        r.readAsDataURL(blob);
-    });
 }
 
 function getTitle() {
