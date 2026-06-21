@@ -12,9 +12,9 @@
     <meta name="theme-color" content="#1c1410">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
 
     <style>
         :root {
@@ -515,7 +515,6 @@
 <input type="file" id="img-picker"  accept="image/*"        style="display:none" onchange="handleImageFile(event)">
 <input type="file" id="file-picker" accept=".txt,.html,.md" style="display:none" onchange="handleImportFile(event)">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
 <script>
 /* =========================================================
    WriteNow ✏️
@@ -525,7 +524,8 @@
 // ── SERVICE WORKER ────────────────────────────────────────
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
-        .catch(e => console.warn('SW skipped:', e));
+        .then(() => console.log('SW registered'))
+        .catch(e => console.log('SW registration skipped:', e.message));
 }
 
 // Master HTML buffer — single source of truth for all content
