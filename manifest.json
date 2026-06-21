@@ -1,6 +1,6 @@
 {
-  "name": "PageCraft — Book Writer",
-  "short_name": "PageCraft",
+  "name": "WriteNow",
+  "short_name": "WriteNow",
   "description": "A simple A4 book writer. Type, format, add photos, export.",
   "start_url": "./",
   "scope": "./",

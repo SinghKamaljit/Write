@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PageCraft — Book Writer</title>
+    <title>WriteNow</title>
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='2' width='14' height='20' rx='2' fill='%23b45309'/%3E%3Crect x='6' y='5' width='10' height='1.5' rx='0.5' fill='%23fef3c7'/%3E%3Crect x='6' y='8' width='10' height='1.5' rx='0.5' fill='%23fef3c7'/%3E%3Crect x='6' y='11' width='7' height='1.5' rx='0.5' fill='%23fef3c7'/%3E%3C/svg%3E">
+    <!-- ✏️ Pencil icon (SVG favicon) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z' fill='%23b45309'/%3E%3C/svg%3E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1c1410">
@@ -25,11 +26,13 @@
             --rule:     #e8e0d0;
             --muted:    #9c8b78;
             --toolbar:  #1c1410;
+            --border-ui: #3a2d20;
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bot: env(safe-area-inset-bottom, 0px);
-            /* A4 ratio in screen pixels — feels like real paper */
             --page-w:   min(210mm, 96vw);
             --page-h:   calc(var(--page-w) * 1.4142);
+            --user-font-size: 12pt;
+            --user-line-height: 1.75;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -82,7 +85,7 @@
             font-family: 'Courier New', monospace;
         }
 
-        /* ── FORMAT BAR (pinned B I U) ── */
+        /* ── FORMAT BAR ── */
         #format-bar {
             background: #271e16;
             border-bottom: 1px solid #3a2d20;
@@ -124,9 +127,9 @@
             color: #fff;
             border-color: var(--amber);
         }
-        .f-btn.f-bold  { font-style: normal; font-weight: 900; }
+        .f-btn.f-bold   { font-style: normal; font-weight: 900; }
         .f-btn.f-italic { font-style: italic; font-weight: 400; }
-        .f-btn.f-under { text-decoration: underline; }
+        .f-btn.f-under  { text-decoration: underline; }
 
         .fmt-sep {
             width: 1px;
@@ -148,12 +151,12 @@
         /* ── A4 PAGE CARD ── */
         .a4-page {
             width: var(--page-w);
-            min-height: var(--page-h);
+            height: var(--page-h);
             background: var(--page);
             margin: 0 auto 24px;
             border-radius: 2px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
-            padding: 20mm 20mm 24mm;   /* matches PDF: 20mm all round */
+            padding: 20mm 20mm 24mm;
             position: relative;
             overflow: hidden;
         }
@@ -170,43 +173,49 @@
             user-select: none;
         }
 
-        /* ── THE EDITOR ITSELF ── */
-        #editor {
+        /* ── EDITOR CONTAINER & EDITOR ── */
+        .editor-container {
             width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #editor, [id="editor"] {
+            width: 100%;
+            height: 100%;
             outline: none;
             font-family: Georgia, 'Times New Roman', serif;
-            font-size: 12pt;
-            line-height: 1.75;
+            font-size: var(--user-font-size);
+            line-height: var(--user-line-height);
             color: var(--ink);
             word-wrap: break-word;
             overflow-wrap: break-word;
             hyphens: auto;
             -webkit-hyphens: auto;
-            min-height: calc(var(--page-h) - 44mm - 14px);
             caret-color: var(--amber);
         }
 
-        #editor:empty::before {
+        [id="editor"]:empty::before {
             content: attr(data-placeholder);
             color: #c0b09a;
             pointer-events: none;
             font-style: italic;
         }
 
-        #editor h1 { font-size: 22pt; margin: 0 0 14px; font-family: Georgia, serif; font-weight: 700; line-height: 1.3; }
-        #editor h2 { font-size: 16pt; margin: 16px 0 10px; font-weight: 700; line-height: 1.4; }
-        #editor h3 { font-size: 13pt; margin: 14px 0 8px; font-weight: 700; }
-        #editor p  { margin: 0 0 10px; }
-        #editor blockquote {
+        [id="editor"] h1 { font-size: 22pt; margin: 0 0 14px; font-family: Georgia, serif; font-weight: 700; line-height: 1.3; }
+        [id="editor"] h2 { font-size: 16pt; margin: 16px 0 10px; font-weight: 700; line-height: 1.4; }
+        [id="editor"] h3 { font-size: 13pt; margin: 14px 0 8px; font-weight: 700; }
+        [id="editor"] p  { margin: 0 0 10px; }
+        [id="editor"] blockquote {
             border-left: 3px solid var(--amber);
             padding-left: 14px;
             margin: 14px 0;
             color: #5a4530;
             font-style: italic;
         }
-        #editor ul, #editor ol { padding-left: 22px; margin: 10px 0; }
-        #editor li { margin-bottom: 4px; }
-        #editor img { max-width: 100%; height: auto; display: block; margin: 14px auto; border-radius: 2px; }
+        [id="editor"] ul, [id="editor"] ol { padding-left: 22px; margin: 10px 0; }
+        [id="editor"] li { margin-bottom: 4px; }
+        [id="editor"] img { max-width: 100%; height: auto; display: block; margin: 14px auto; border-radius: 2px; }
 
         /* ── BOTTOM TOOLBAR ── */
         #bottom-toolbar {
@@ -221,6 +230,7 @@
             gap: 6px;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            align-items: center;
         }
         .tool-row::-webkit-scrollbar { display: none; }
 
@@ -245,23 +255,23 @@
         .t-btn:active { background: var(--amber); color: #fff; border-color: var(--amber); }
         .t-btn.t-accent { background: var(--amber); color: #fff; border-color: var(--amber); }
 
-        /* ── EXPORT DRAWER ── */
-        #export-drawer {
+        /* ── DRAWERS (export + settings) ── */
+        #export-drawer, #settings-drawer {
             position: fixed;
             inset: 0;
             z-index: 100;
             display: none;
             align-items: flex-end;
         }
-        #export-drawer.open { display: flex; }
+        #export-drawer.open, #settings-drawer.open { display: flex; }
 
-        #drawer-backdrop {
+        .drawer-backdrop {
             position: absolute;
             inset: 0;
             background: rgba(0,0,0,0.6);
         }
 
-        #drawer-panel {
+        .drawer-panel {
             position: relative;
             width: 100%;
             background: #1c1410;
@@ -280,6 +290,7 @@
             text-align: center;
         }
 
+        /* export grid */
         .export-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -305,9 +316,8 @@
         .exp-btn span.ext { font-size: 1.4rem; }
         .exp-btn span.lbl { font-size: 0.72rem; color: var(--muted); font-family: 'Courier New', monospace; font-weight: 400; }
         .exp-btn:active { background: var(--amber); border-color: var(--amber); }
-        .exp-btn.full-width { grid-column: 1 / -1; }
 
-        #drawer-cancel {
+        .drawer-cancel {
             width: 100%;
             margin-top: 12px;
             background: transparent;
@@ -320,10 +330,63 @@
             font-family: 'Courier New', monospace;
         }
 
+        /* settings rows */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #2e2218;
+        }
+        .setting-label {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .setting-label span:first-child { color: #fef3c7; font-size: 0.9rem; font-family: 'Courier New', monospace; }
+        .setting-desc { font-size: 0.72rem; color: var(--muted); font-family: 'Courier New', monospace; }
+
+        .settings-select {
+            background: #2e2218;
+            border: 1px solid #4a3828;
+            color: #fef3c7;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+        }
+
+        .btn-reset {
+            width: 100%;
+            margin-top: 14px;
+            background: #2e2218;
+            border: 1px solid #4a3828;
+            color: var(--muted);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        .btn-reset:active { background: var(--amber); color: #fff; }
+
+        /* ── PAGE DOTS ── */
+        #page-dots {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            z-index: 47;
+            pointer-events: none;
+        }
+
         /* ── PRINT STYLES ── */
         @media print {
             body { background: white; }
-            header, #format-bar, #bottom-toolbar, #export-drawer { display: none !important; }
+            header, #format-bar, #bottom-toolbar, #export-drawer, #settings-drawer, #page-dots { display: none !important; }
             #scroll-canvas { overflow: visible; padding: 0; }
             .a4-page {
                 box-shadow: none;
@@ -331,7 +394,7 @@
                 margin: 0;
                 page-break-after: always;
                 width: 210mm;
-                min-height: 297mm;
+                height: 297mm;
                 padding: 20mm 18mm;
             }
             @page { size: A4; margin: 0; }
@@ -343,11 +406,11 @@
 <!-- HEADER -->
 <header>
     <span contenteditable="true" id="doc-title" spellcheck="false">My Document</span>
-    <span id="page-counter">p.1</span>
+    <span id="page-counter">~1 p</span>
     <span id="save-badge">●</span>
 </header>
 
-<!-- FORMAT BAR — always visible, always reachable -->
+<!-- FORMAT BAR -->
 <div id="format-bar">
     <span class="fmt-label">Format</span>
     <button class="f-btn f-bold"   id="btn-bold"   title="Bold"      onmousedown="event.preventDefault(); toggleFormat('bold');"><b>B</b></button>
@@ -358,20 +421,11 @@
     <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" title="Quote" onmousedown="event.preventDefault(); toggleQuote();">"</button>
 </div>
 
-<!-- SCROLL CANVAS — pages live here -->
-<div id="scroll-canvas">
-    <div class="a4-page" id="page-1">
-        <div id="editor"
-             contenteditable="true"
-             data-placeholder="Start writing… or paste your text here."
-             role="textbox"
-             aria-multiline="true"
-             aria-label="Document editor"
-             spellcheck="true">
-        </div>
-        <span class="page-num-label">1</span>
-    </div>
-</div>
+<!-- SCROLL CANVAS — pages built dynamically by repaginate() -->
+<div id="scroll-canvas"></div>
+
+<!-- PAGE DOTS -->
+<div id="page-dots"></div>
 
 <!-- BOTTOM TOOLBAR -->
 <div id="bottom-toolbar">
@@ -379,17 +433,57 @@
         <button class="t-btn" onmousedown="event.preventDefault(); insertImage();" title="Add image">📷 Photo</button>
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ul');">• List</button>
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ol');">1. List</button>
+        <button class="t-btn" onclick="prevPage()">◀</button>
+        <button class="t-btn" onclick="nextPage()">▶</button>
         <button class="t-btn" onmousedown="event.preventDefault(); undoAction();">↶ Undo</button>
         <button class="t-btn" onmousedown="event.preventDefault(); redoAction();">↷ Redo</button>
         <button class="t-btn" onclick="importFile()">⬆ Import</button>
         <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
+        <button class="t-btn" onclick="openSettings()">⚙️</button>
+    </div>
+</div>
+
+<!-- SETTINGS DRAWER -->
+<div id="settings-drawer" role="dialog" aria-label="Editor Settings">
+    <div class="drawer-backdrop" onclick="closeSettings()"></div>
+    <div class="drawer-panel">
+        <div class="drawer-title">✏️ WriteNow — Preferences</div>
+
+        <div class="setting-row">
+            <div class="setting-label">
+                <span>📏 Font Size</span>
+                <span class="setting-desc">Base scale for typography</span>
+            </div>
+            <select id="setting-fontsize" class="settings-select" onchange="changeFontSize(this.value)">
+                <option value="10pt">10pt — Compact</option>
+                <option value="12pt" selected>12pt — Standard</option>
+                <option value="14pt">14pt — Large</option>
+                <option value="16pt">16pt — XL</option>
+            </select>
+        </div>
+
+        <div class="setting-row">
+            <div class="setting-label">
+                <span>📐 Line Spacing</span>
+                <span class="setting-desc">Vertical rhythm</span>
+            </div>
+            <select id="setting-linespacing" class="settings-select" onchange="changeLineSpacing(this.value)">
+                <option value="1.3">1.3 — Tight</option>
+                <option value="1.5">1.5 — Comfortable</option>
+                <option value="1.75" selected>1.75 — Standard</option>
+                <option value="2.0">2.0 — Double</option>
+            </select>
+        </div>
+
+        <button class="btn-reset" onclick="resetToDefaults()">🔄 Reset to Defaults</button>
+        <button class="drawer-cancel" onclick="closeSettings()">Close</button>
     </div>
 </div>
 
 <!-- EXPORT DRAWER -->
 <div id="export-drawer" role="dialog" aria-label="Export options">
-    <div id="drawer-backdrop" onclick="closeExport()"></div>
-    <div id="drawer-panel">
+    <div class="drawer-backdrop" onclick="closeExport()"></div>
+    <div class="drawer-panel">
         <div class="drawer-title">Export / Save As</div>
         <div class="export-grid">
             <button class="exp-btn" onclick="exportPDF()">
@@ -413,19 +507,19 @@
                 <span class="lbl">Browser print</span>
             </button>
         </div>
-        <button id="drawer-cancel" onclick="closeExport()">Cancel</button>
+        <button class="drawer-cancel" onclick="closeExport()">Cancel</button>
     </div>
 </div>
 
 <!-- Hidden inputs -->
-<input type="file" id="img-picker"  accept="image/*"         style="display:none" onchange="handleImageFile(event)">
-<input type="file" id="file-picker" accept=".txt,.html,.md"  style="display:none" onchange="handleImportFile(event)">
+<input type="file" id="img-picker"  accept="image/*"        style="display:none" onchange="handleImageFile(event)">
+<input type="file" id="file-picker" accept=".txt,.html,.md" style="display:none" onchange="handleImportFile(event)">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
 <script>
 /* =========================================================
-   PageCraft wb7
-   Simple, breezy A4 book writer — mobile-first
+   WriteNow ✏️
+   Mobile-first A4 book writer — auto-pagination edition
    ========================================================= */
 
 // ── SERVICE WORKER ────────────────────────────────────────
@@ -434,34 +528,281 @@ if ('serviceWorker' in navigator) {
         .catch(e => console.warn('SW skipped:', e));
 }
 
-const editor   = document.getElementById('editor');
+// Master HTML buffer — single source of truth for all content
+let masterHTML = '<h1>Chapter One</h1><p></p>';
+
+const canvasEl = document.getElementById('scroll-canvas');
 const saveEl   = document.getElementById('save-badge');
 const pageEl   = document.getElementById('page-counter');
 const titleEl  = document.getElementById('doc-title');
 
-let db          = null;
-let dirty       = false;
-let saveTimer   = null;
-let activeFormats = new Set();
+let db        = null;
+let dirty     = false;
+let saveTimer = null;
+
+const DEFAULTS = { fontSize: '12pt', lineSpacing: '1.75' };
 
 // ── INIT ──────────────────────────────────────────────────
 (async function init() {
+    loadSettings();
     await openDB();
     await loadDraft();
     bindEvents();
-    updateCounter();
 })();
+
+// ── SETTINGS ──────────────────────────────────────────────
+function loadSettings() {
+    const cfg = JSON.parse(localStorage.getItem('writenow_settings') || JSON.stringify(DEFAULTS));
+    document.getElementById('setting-fontsize').value    = cfg.fontSize;
+    document.getElementById('setting-linespacing').value = cfg.lineSpacing;
+    document.documentElement.style.setProperty('--user-font-size',   cfg.fontSize);
+    document.documentElement.style.setProperty('--user-line-height', cfg.lineSpacing);
+}
+
+function saveSettingsState() {
+    localStorage.setItem('writenow_settings', JSON.stringify({
+        fontSize:    document.getElementById('setting-fontsize').value,
+        lineSpacing: document.getElementById('setting-linespacing').value
+    }));
+}
+
+function changeFontSize(size, save = true) {
+    document.documentElement.style.setProperty('--user-font-size', size);
+    if (save) { saveSettingsState(); repaginate(); }
+}
+
+function changeLineSpacing(spacing, save = true) {
+    document.documentElement.style.setProperty('--user-line-height', spacing);
+    if (save) { saveSettingsState(); repaginate(); }
+}
+
+function resetToDefaults() {
+    document.getElementById('setting-fontsize').value    = DEFAULTS.fontSize;
+    document.getElementById('setting-linespacing').value = DEFAULTS.lineSpacing;
+    changeFontSize(DEFAULTS.fontSize, false);
+    changeLineSpacing(DEFAULTS.lineSpacing, false);
+    saveSettingsState();
+    repaginate();
+}
+
+function openSettings()  { document.getElementById('settings-drawer').classList.add('open'); }
+function closeSettings() { document.getElementById('settings-drawer').classList.remove('open'); }
+
+// ── AUTO-PAGINATION ENGINE ────────────────────────────────
+function repaginate() {
+    const selection = window.getSelection();
+    let savedOffset = 0;
+    let focusInEditor = false;
+
+    if (selection.rangeCount > 0 && canvasEl.contains(selection.focusNode)) {
+        focusInEditor = true;
+        const range = selection.getRangeAt(0);
+        const activeEd = getActiveEditor();
+        if (activeEd) {
+            const preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(activeEd);
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            savedOffset = preCaretRange.toString().length;
+        }
+    }
+
+    const sandbox = document.createElement('div');
+    sandbox.innerHTML = masterHTML;
+
+    canvasEl.innerHTML = '';
+
+    let pageIdx = 1;
+    let pageView = createPageDOMNode(pageIdx);
+    canvasEl.appendChild(pageView);
+    let currentEditor = pageView.querySelector('[id="editor"]');
+
+    Array.from(sandbox.childNodes).forEach(node => {
+        const cloned = node.cloneNode(true);
+        currentEditor.appendChild(cloned);
+
+        if (currentEditor.scrollHeight > currentEditor.clientHeight) {
+            currentEditor.removeChild(cloned);
+            pageIdx++;
+            pageView = createPageDOMNode(pageIdx);
+            canvasEl.appendChild(pageView);
+            currentEditor = pageView.querySelector('[id="editor"]');
+            currentEditor.appendChild(cloned);
+        }
+    });
+
+    updateCounter();
+    updatePageDots();
+    bindEditorMutationTriggers();
+
+    if (focusInEditor) restoreSelectionState(savedOffset);
+}
+
+function createPageDOMNode(index) {
+    const pageCard = document.createElement('div');
+    pageCard.className = 'a4-page';
+    pageCard.id = `page-${index}`;
+
+    const container = document.createElement('div');
+    container.className = 'editor-container';
+
+    const editorNode = document.createElement('div');
+    editorNode.id = 'editor';
+    editorNode.contentEditable = 'true';
+    editorNode.setAttribute('data-placeholder', index === 1 ? 'Start writing… or paste your text here.' : '');
+    editorNode.setAttribute('role', 'textbox');
+    editorNode.setAttribute('aria-multiline', 'true');
+    editorNode.setAttribute('aria-label', `Document editor page ${index}`);
+    editorNode.setAttribute('spellcheck', 'true');
+
+    const label = document.createElement('span');
+    label.className = 'page-num-label';
+    label.textContent = index;
+
+    container.appendChild(editorNode);
+    pageCard.appendChild(container);
+    pageCard.appendChild(label);
+    return pageCard;
+}
+
+function getActiveEditor() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return canvasEl.querySelector('[id="editor"]');
+    let node = sel.focusNode;
+    while (node && node !== canvasEl) {
+        if (node.id === 'editor' && node.contentEditable === 'true') return node;
+        node = node.parentNode;
+    }
+    return canvasEl.querySelector('[id="editor"]');
+}
+
+function syncMasterBuffer() {
+    let compiled = '';
+    canvasEl.querySelectorAll('[id="editor"]').forEach(ed => { compiled += ed.innerHTML; });
+    masterHTML = DOMPurify.sanitize(compiled);
+}
+
+function bindEditorMutationTriggers() {
+    canvasEl.querySelectorAll('[id="editor"]').forEach(ed => {
+        ed.removeEventListener('input', handleEditorInputEvent);
+        ed.addEventListener('input', handleEditorInputEvent);
+
+        ed.removeEventListener('paste', handleEditorPasteEvent);
+        ed.addEventListener('paste', handleEditorPasteEvent);
+
+        ed.removeEventListener('keyup',    updateFormatState);
+        ed.addEventListener('keyup',    updateFormatState);
+        ed.removeEventListener('mouseup',  updateFormatState);
+        ed.addEventListener('mouseup',  updateFormatState);
+        ed.removeEventListener('touchend', updateFormatState);
+        ed.addEventListener('touchend', updateFormatState);
+    });
+}
+
+function handleEditorInputEvent(e) {
+    syncMasterBuffer();
+    markDirty();
+    const ed = e.currentTarget;
+    if (ed.scrollHeight > ed.clientHeight || masterHTML.length % 15 === 0) {
+        repaginate();
+    } else {
+        updateCounter();
+    }
+}
+
+function restoreSelectionState(targetOffset) {
+    const editors = canvasEl.querySelectorAll('[id="editor"]');
+    let accumulated = 0;
+    const range = document.createRange();
+    const sel   = window.getSelection();
+
+    for (let ed of editors) {
+        const len = ed.innerText.length;
+        if (accumulated + len >= targetOffset || ed === editors[editors.length - 1]) {
+            let localOffset = Math.max(0, targetOffset - accumulated);
+            let walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT, null, false);
+            let node = walker.nextNode(), chars = 0, placed = false;
+
+            if (!node) {
+                ed.focus();
+                try { range.selectNodeContents(ed); range.collapse(false); sel.removeAllRanges(); sel.addRange(range); } catch(e){}
+                break;
+            }
+
+            while (node) {
+                const nl = node.textContent.length;
+                if (chars + nl >= localOffset) {
+                    ed.focus();
+                    try { range.setStart(node, localOffset - chars); range.collapse(true); sel.removeAllRanges(); sel.addRange(range); } catch(e){}
+                    placed = true;
+                    break;
+                }
+                chars += nl;
+                node = walker.nextNode();
+            }
+            if (!placed) {
+                ed.focus();
+                try { range.selectNodeContents(ed); range.collapse(false); sel.removeAllRanges(); sel.addRange(range); } catch(e){}
+            }
+            break;
+        }
+        accumulated += len;
+    }
+}
+
+// ── NAVIGATION ────────────────────────────────────────────
+function getActivePage() {
+    const pages = canvasEl.querySelectorAll('.a4-page');
+    let current = 1;
+    pages.forEach((p, i) => {
+        const r = p.getBoundingClientRect();
+        if (r.top <= window.innerHeight / 2 && r.bottom >= window.innerHeight / 2) current = i + 1;
+    });
+    return current;
+}
+
+function prevPage() {
+    const c = getActivePage();
+    if (c > 1) document.getElementById(`page-${c - 1}`)?.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(updatePageDots, 400);
+}
+
+function nextPage() {
+    const c = getActivePage();
+    const total = canvasEl.querySelectorAll('.a4-page').length;
+    if (c < total) document.getElementById(`page-${c + 1}`)?.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(updatePageDots, 400);
+}
+
+function updatePageDots() {
+    const container = document.getElementById('page-dots');
+    if (!container) return;
+    const total   = canvasEl.querySelectorAll('.a4-page').length;
+    const current = getActivePage();
+    container.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+        const dot = document.createElement('span');
+        const active = i === current - 1;
+        dot.style.cssText = `width:${active ? '12px' : '8px'};height:8px;border-radius:4px;` +
+            `background:${active ? 'var(--amber)' : 'var(--muted)'};transition:all 0.3s;display:inline-block;`;
+        container.appendChild(dot);
+    }
+}
+
+// ── PAGE COUNTER (your new logic) ─────────────────────────
+function updateCounter() {
+    const total   = canvasEl.querySelectorAll('.a4-page').length;
+    const current = getActivePage();
+    pageEl.textContent = total > 1 ? `${current}/${total}` : `~${total} p`;
+}
 
 // ── INDEXEDDB ─────────────────────────────────────────────
 function openDB() {
     return new Promise((res, rej) => {
-        const req = indexedDB.open('pagecraft_v1', 1);
+        const req = indexedDB.open('writenow_v1', 1);
         req.onupgradeneeded = e => {
             const d = e.target.result;
-            if (!d.objectStoreNames.contains('draft'))
-                d.createObjectStore('draft', { keyPath: 'id' });
-            if (!d.objectStoreNames.contains('images'))
-                d.createObjectStore('images', { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('draft'))  d.createObjectStore('draft',  { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('images')) d.createObjectStore('images', { keyPath: 'id' });
         };
         req.onsuccess = e => { db = e.target.result; res(); };
         req.onerror   = e => rej(e.target.error);
@@ -470,7 +811,7 @@ function openDB() {
 
 function dbPut(store, obj) {
     return new Promise((res, rej) => {
-        const tx  = db.transaction(store, 'readwrite');
+        const tx = db.transaction(store, 'readwrite');
         const req = tx.objectStore(store).put(obj);
         req.onsuccess = () => res();
         req.onerror   = e => rej(e.target.error);
@@ -478,8 +819,8 @@ function dbPut(store, obj) {
 }
 
 function dbGet(store, key) {
-    return new Promise((res) => {
-        const tx  = db.transaction(store, 'readonly');
+    return new Promise(res => {
+        const tx = db.transaction(store, 'readonly');
         const req = tx.objectStore(store).get(key);
         req.onsuccess = () => res(req.result || null);
         req.onerror   = () => res(null);
@@ -498,16 +839,14 @@ function markDirty() {
 async function saveDraft() {
     if (!db || !dirty) return;
     try {
-        const clone = editor.cloneNode(true);
-        // Blank out blob src before storing — reload from images store
-        clone.querySelectorAll('img[data-img-id]').forEach(img => {
-            img.src = '';
-        });
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = masterHTML;
+        wrapper.querySelectorAll('img[data-img-id]').forEach(img => { img.src = ''; });
         await dbPut('draft', {
-            id:      'current',
-            title:   titleEl.innerText.trim() || 'My Document',
-            html:    DOMPurify.sanitize(clone.innerHTML),
-            saved:   Date.now()
+            id:    'current',
+            title: titleEl.innerText.trim() || 'My Document',
+            html:  DOMPurify.sanitize(wrapper.innerHTML),
+            saved: Date.now()
         });
         dirty = false;
         saveEl.textContent = '✓';
@@ -521,87 +860,87 @@ async function saveDraft() {
 async function loadDraft() {
     const data = await dbGet('draft', 'current');
     if (!data) {
-        editor.innerHTML = '<h1>Chapter One</h1><p></p>';
+        masterHTML = '<h1>Chapter One</h1><p></p>';
+        repaginate();
         return;
     }
     titleEl.innerText = data.title || 'My Document';
-    editor.innerHTML  = DOMPurify.sanitize(data.html || '');
 
-    // Rehydrate images from IndexedDB
-    for (const img of editor.querySelectorAll('img[data-img-id]')) {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = DOMPurify.sanitize(data.html || '');
+
+    for (const img of wrapper.querySelectorAll('img[data-img-id]')) {
         const blob = await dbGet('images', img.getAttribute('data-img-id'));
-        if (blob) {
-            const url = URL.createObjectURL(blob.data);
-            img.src   = url;
-        } else {
-            img.remove();
-        }
+        if (blob) img.src = URL.createObjectURL(blob.data);
+        else img.remove();
     }
+
+    masterHTML = wrapper.innerHTML;
+    repaginate();
     saveEl.textContent = '✓';
     saveEl.style.color = '#86a86b';
 }
 
 // ── EVENTS ────────────────────────────────────────────────
 function bindEvents() {
-    editor.addEventListener('input', () => { markDirty(); updateCounter(); });
     titleEl.addEventListener('input', markDirty);
 
-    // Paste — strip junk, keep text + basic tags
-    editor.addEventListener('paste', e => {
-        e.preventDefault();
-        const html  = (e.clipboardData || window.clipboardData).getData('text/html');
-        const plain = (e.clipboardData || window.clipboardData).getData('text/plain');
-
-        let clean;
-        if (html) {
-            clean = DOMPurify.sanitize(html, {
-                ALLOWED_TAGS: ['p','br','b','strong','i','em','u','h1','h2','h3',
-                               'ul','ol','li','blockquote','img','a'],
-                ALLOWED_ATTR: ['href','src','alt']
-            });
-        } else {
-            // Plain text paste — wrap paragraphs nicely
-            clean = plain
-                .split(/\r?\n\r?\n/)
-                .map(para => {
-                    const lines = para.replace(/\r?\n/g, '<br>').trim();
-                    return lines ? `<p>${lines}</p>` : '';
-                })
-                .filter(Boolean)
-                .join('');
-        }
-
-        const range = window.getSelection().getRangeAt(0);
-        range.deleteContents();
-        const frag = document.createRange().createContextualFragment(clean);
-        range.insertNode(frag);
-        markDirty();
+    canvasEl.addEventListener('scroll', () => {
+        updatePageDots();
         updateCounter();
-    });
+    }, { passive: true });
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', e => {
         const m = e.ctrlKey || e.metaKey;
-        if (m && e.key === 's')    { e.preventDefault(); saveDraft(); }
-        if (m && e.key === 'b')    { e.preventDefault(); toggleFormat('bold'); }
-        if (m && e.key === 'i')    { e.preventDefault(); toggleFormat('italic'); }
-        if (m && e.key === 'u')    { e.preventDefault(); toggleFormat('underline'); }
-        if (m && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoAction(); }
-        if (m && e.key === 'z' &&  e.shiftKey) { e.preventDefault(); redoAction(); }
-        if (m && e.key === 'y')    { e.preventDefault(); redoAction(); }
+        if (m && e.key === 's')                    { e.preventDefault(); saveDraft(); }
+        if (m && e.key === 'b')                    { e.preventDefault(); toggleFormat('bold'); }
+        if (m && e.key === 'i')                    { e.preventDefault(); toggleFormat('italic'); }
+        if (m && e.key === 'u')                    { e.preventDefault(); toggleFormat('underline'); }
+        if (m && e.key === 'z' && !e.shiftKey)     { e.preventDefault(); undoAction(); }
+        if (m && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redoAction(); }
+        if (m && e.key === 'y')                    { e.preventDefault(); redoAction(); }
     });
+}
 
-    // Track active formats for button highlight
-    editor.addEventListener('keyup',    updateFormatState);
-    editor.addEventListener('mouseup',  updateFormatState);
-    editor.addEventListener('touchend', updateFormatState);
+function handleEditorPasteEvent(e) {
+    e.preventDefault();
+    const html  = (e.clipboardData || window.clipboardData).getData('text/html');
+    const plain = (e.clipboardData || window.clipboardData).getData('text/plain');
+
+    let clean;
+    if (html) {
+        clean = DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ['p','br','b','strong','i','em','u','h1','h2','h3','ul','ol','li','blockquote','img','a'],
+            ALLOWED_ATTR: ['href','src','alt']
+        });
+    } else {
+        clean = plain
+            .split(/\r?\n\r?\n/)
+            .map(para => {
+                const lines = para.replace(/\r?\n/g, '<br>').trim();
+                return lines ? `<p>${lines}</p>` : '';
+            })
+            .filter(Boolean)
+            .join('');
+    }
+
+    const range = window.getSelection().getRangeAt(0);
+    range.deleteContents();
+    const frag = document.createRange().createContextualFragment(clean);
+    range.insertNode(frag);
+
+    syncMasterBuffer();
+    markDirty();
+    repaginate();
 }
 
 // ── FORMAT BAR ────────────────────────────────────────────
 function toggleFormat(cmd) {
-    editor.focus();
+    const ed = getActiveEditor();
+    if (ed) ed.focus();
     document.execCommand(cmd, false, null);
     updateFormatState();
+    syncMasterBuffer();
     markDirty();
 }
 
@@ -610,21 +949,18 @@ function toggleHeading() {
     if (!sel.rangeCount) return;
     let node = sel.focusNode;
     if (node && node.nodeType === 3) node = node.parentNode;
-    // Walk up to find block-level parent inside editor
-    while (node && node.parentNode !== editor) node = node.parentNode;
+    const activeEd = getActiveEditor();
+    while (node && node.parentNode !== activeEd) node = node.parentNode;
     if (!node) return;
-    const tag = node.tagName ? node.tagName.toLowerCase() : 'p';
+    const tag  = node.tagName ? node.tagName.toLowerCase() : 'p';
     const next = tag === 'p' ? 'h1' : tag === 'h1' ? 'h2' : tag === 'h2' ? 'h3' : 'p';
     const newEl = document.createElement(next);
     newEl.innerHTML = node.innerHTML;
     node.replaceWith(newEl);
-    // Put cursor in new element
     const r = document.createRange();
-    r.selectNodeContents(newEl);
-    r.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(r);
-    markDirty();
+    r.selectNodeContents(newEl); r.collapse(false);
+    sel.removeAllRanges(); sel.addRange(r);
+    syncMasterBuffer(); markDirty(); repaginate();
 }
 
 function toggleQuote() {
@@ -632,7 +968,8 @@ function toggleQuote() {
     if (!sel.rangeCount) return;
     let node = sel.focusNode;
     if (node && node.nodeType === 3) node = node.parentNode;
-    while (node && node.parentNode !== editor) node = node.parentNode;
+    const activeEd = getActiveEditor();
+    while (node && node.parentNode !== activeEd) node = node.parentNode;
     if (!node) return;
     if (node.tagName && node.tagName.toLowerCase() === 'blockquote') {
         const p = document.createElement('p');
@@ -643,34 +980,35 @@ function toggleQuote() {
         bq.innerHTML = node.innerHTML;
         node.replaceWith(bq);
     }
-    markDirty();
+    syncMasterBuffer(); markDirty(); repaginate();
 }
 
 function updateFormatState() {
-    document.getElementById('btn-bold').classList.toggle('active',
-        document.queryCommandState('bold'));
-    document.getElementById('btn-italic').classList.toggle('active',
-        document.queryCommandState('italic'));
-    document.getElementById('btn-under').classList.toggle('active',
-        document.queryCommandState('underline'));
+    document.getElementById('btn-bold').classList.toggle('active',   document.queryCommandState('bold'));
+    document.getElementById('btn-italic').classList.toggle('active', document.queryCommandState('italic'));
+    document.getElementById('btn-under').classList.toggle('active',  document.queryCommandState('underline'));
 }
 
 // ── LISTS ─────────────────────────────────────────────────
 function insertList(type) {
-    editor.focus();
+    const ed = getActiveEditor();
+    if (ed) ed.focus();
     document.execCommand(type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList');
-    markDirty();
+    syncMasterBuffer(); markDirty(); repaginate();
 }
 
 // ── UNDO / REDO ───────────────────────────────────────────
-function undoAction() { editor.focus(); document.execCommand('undo'); markDirty(); }
-function redoAction() { editor.focus(); document.execCommand('redo'); markDirty(); }
-
-// ── PAGE COUNTER ──────────────────────────────────────────
-function updateCounter() {
-    const words = (editor.innerText.match(/\S+/g) || []).length;
-    const pages = Math.max(1, Math.ceil(words / 300));
-    pageEl.textContent = `~${pages} p`;
+function undoAction() {
+    const ed = getActiveEditor();
+    if (ed) ed.focus();
+    document.execCommand('undo');
+    syncMasterBuffer(); markDirty(); repaginate();
+}
+function redoAction() {
+    const ed = getActiveEditor();
+    if (ed) ed.focus();
+    document.execCommand('redo');
+    syncMasterBuffer(); markDirty(); repaginate();
 }
 
 // ── IMAGES ────────────────────────────────────────────────
@@ -683,27 +1021,27 @@ async function handleImageFile(e) {
     if (!file) return;
     e.target.value = '';
 
-    // Compress
     const blob = await compressImage(file, 1200, 0.82);
     const id   = 'img_' + Date.now();
     await dbPut('images', { id, data: blob });
 
-    const url  = URL.createObjectURL(blob);
-    const img  = document.createElement('img');
-    img.src    = url;
+    const url = URL.createObjectURL(blob);
+    const img = document.createElement('img');
+    img.src   = url;
     img.setAttribute('data-img-id', id);
     img.style.maxWidth = '100%';
 
     const sel = window.getSelection();
-    if (sel && sel.rangeCount) {
+    const activeEd = getActiveEditor();
+    if (sel && sel.rangeCount && activeEd.contains(sel.focusNode)) {
         const range = sel.getRangeAt(0);
         range.deleteContents();
         range.insertNode(img);
     } else {
-        editor.appendChild(img);
+        activeEd.appendChild(img);
     }
-    markDirty();
-    updateCounter();
+
+    syncMasterBuffer(); markDirty(); repaginate();
 }
 
 function compressImage(file, maxDim, quality) {
@@ -718,8 +1056,7 @@ function compressImage(file, maxDim, quality) {
                     else                { width  = Math.round(width  * maxDim / height); height = maxDim; }
                 }
                 const canvas = document.createElement('canvas');
-                canvas.width  = width;
-                canvas.height = height;
+                canvas.width = width; canvas.height = height;
                 canvas.getContext('2d').drawImage(imgEl, 0, 0, width, height);
                 canvas.toBlob(b => res(b), 'image/jpeg', quality);
             };
@@ -742,24 +1079,22 @@ function handleImportFile(e) {
     reader.onload = ev => {
         const raw = ev.target.result;
         const ext = file.name.split('.').pop().toLowerCase();
-        let html = '';
+        let html  = '';
         if (ext === 'md' || ext === 'markdown') {
             html = marked.parse(raw);
         } else if (ext === 'html' || ext === 'htm') {
-            const doc = new DOMParser().parseFromString(raw, 'text/html');
-            html = doc.body.innerHTML;
+            html = new DOMParser().parseFromString(raw, 'text/html').body.innerHTML;
         } else {
-            // Plain text — wrap double-newline paragraphs
             html = raw
                 .split(/\r?\n\r?\n/)
                 .map(p => p.trim() ? `<p>${p.replace(/\r?\n/g, '<br>')}</p>` : '')
                 .filter(Boolean)
                 .join('');
         }
-        editor.innerHTML = DOMPurify.sanitize(html);
+        masterHTML = DOMPurify.sanitize(html);
         titleEl.innerText = file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
         markDirty();
-        updateCounter();
+        repaginate();
     };
     reader.readAsText(file);
 }
@@ -771,231 +1106,155 @@ function closeExport() { document.getElementById('export-drawer').classList.remo
 // TXT
 function exportTXT() {
     closeExport();
-    const text = editor.innerText;
-    const blob  = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const tmp = document.createElement('div');
+    tmp.innerHTML = masterHTML;
+    const blob = new Blob([tmp.innerText], { type: 'text/plain;charset=utf-8' });
     download(blob, getTitle() + '.txt');
 }
 
 // HTML
 function exportHTML() {
     closeExport();
-    const body = editor.innerHTML;
-    const css  = `body{font-family:Georgia,serif;font-size:12pt;line-height:1.75;max-width:72ch;margin:2cm auto;color:#1c1410}
+    const fs  = document.getElementById('setting-fontsize').value;
+    const lh  = document.getElementById('setting-linespacing').value;
+    const css = `body{font-family:Georgia,serif;font-size:${fs};line-height:${lh};max-width:72ch;margin:2cm auto;color:#1c1410}
 h1{font-size:22pt}h2{font-size:16pt}h3{font-size:13pt}
 blockquote{border-left:3px solid #b45309;padding-left:14px;font-style:italic;color:#5a4530}
 img{max-width:100%;display:block;margin:14px auto}`;
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>${getTitle()}</title><style>${css}</style></head>
-<body><h1>${titleEl.innerText}</h1>${body}</body></html>`;
-    const blob  = new Blob([html], { type: 'text/html;charset=utf-8' });
-    download(blob, getTitle() + '.html');
+<body><h1>${titleEl.innerText}</h1>${masterHTML}</body></html>`;
+    download(new Blob([html], { type: 'text/html;charset=utf-8' }), getTitle() + '.html');
 }
 
-// ── IMAGE DIMENSIONS HELPER ───────────────────────────────
-async function getImageDimensions(imgElement) {
-    return new Promise((resolve) => {
-        if (imgElement.complete && imgElement.naturalWidth) {
-            resolve({ width: imgElement.naturalWidth, height: imgElement.naturalHeight });
+// IMAGE DIMENSIONS HELPER
+async function getImageDimensions(imgEl) {
+    return new Promise(resolve => {
+        if (imgEl.complete && imgEl.naturalWidth) {
+            resolve({ width: imgEl.naturalWidth, height: imgEl.naturalHeight });
             return;
         }
-        const tempImg = new Image();
-        tempImg.onload = () => {
-            const dims = { width: tempImg.naturalWidth, height: tempImg.naturalHeight };
-            tempImg.src = '';
-            resolve(dims);
-        };
-        tempImg.onerror = () => {
-            tempImg.src = '';
-            resolve({ width: 800, height: 600 }); // safe fallback
-        };
-        tempImg.src = imgElement.src;
+        const tmp = new Image();
+        tmp.onload  = () => { const d = { width: tmp.naturalWidth, height: tmp.naturalHeight }; tmp.src = ''; resolve(d); };
+        tmp.onerror = () => { tmp.src = ''; resolve({ width: 800, height: 600 }); };
+        tmp.src = imgEl.src;
     });
 }
 
-// PDF via jsPDF
+// PDF via jsPDF — renders from masterHTML (correct for multi-page)
 async function exportPDF() {
     closeExport();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    const W = 210, H = 297, M = 20;
-    const TW = W - M * 2;
+    const W = 210, H = 297, M = 20, TW = W - M * 2;
     let y = M, pageNum = 1;
 
     function addPageNum() {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(150);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(150);
         doc.text(String(pageNum), W / 2, H - 8, { align: 'center' });
         doc.setTextColor(0);
     }
 
     function checkNewPage(needed = 8) {
-        if (y + needed > H - M) {
-            addPageNum();
-            doc.addPage();
-            pageNum++;
-            y = M;
-        }
+        if (y + needed > H - M) { addPageNum(); doc.addPage(); pageNum++; y = M; }
     }
 
     const title = titleEl.innerText.trim();
     if (title && title !== 'My Document') {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(22);
-        const tLines = doc.splitTextToSize(title, TW);
-        tLines.forEach(l => { checkNewPage(12); doc.text(l, M, y); y += 12; });
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(22);
+        doc.splitTextToSize(title, TW).forEach(l => { checkNewPage(12); doc.text(l, M, y); y += 12; });
         y += 6;
     }
 
-    const nodes = Array.from(editor.childNodes);
+    const sandbox = document.createElement('div');
+    sandbox.innerHTML = masterHTML;
 
-    for (const node of nodes) {
+    for (const node of Array.from(sandbox.childNodes)) {
         if (node.nodeType === Node.TEXT_NODE) {
             const t = node.textContent.trim();
             if (!t) continue;
             doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-            const lines = doc.splitTextToSize(t, TW);
-            lines.forEach(l => { checkNewPage(6); doc.text(l, M, y); y += 6; });
+            doc.splitTextToSize(t, TW).forEach(l => { checkNewPage(6); doc.text(l, M, y); y += 6; });
             y += 3;
             continue;
         }
-
         if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
         const tag = node.tagName.toLowerCase();
 
-        // Images — aspect-ratio preserved
+        // Standalone image
         if (tag === 'img' && node.getAttribute('data-img-id')) {
             const blob = await dbGet('images', node.getAttribute('data-img-id'));
-            if (blob) {
-                try {
-                    const b64        = await blobToB64(blob.data);
-                    const dimensions = await getImageDimensions(node);
-                    const natW = dimensions.width;
-                    const natH = dimensions.height;
-
-                    const absoluteMaxW = TW;
-                    const absoluteMaxH = 140; // mm — tall images won't fill the whole page
-
-                    // Pre-calculate to decide if we need a new page first
-                    let testIw = Math.min(absoluteMaxW, natW);
-                    let testIh = (testIw * natH) / natW;
-                    if (testIh > absoluteMaxH) {
-                        testIh = absoluteMaxH;
-                        testIw = (testIh * natW) / natH;
-                    }
-                    if (y + testIh + 6 > H - M) {
-                        addPageNum(); doc.addPage(); pageNum++; y = M;
-                    }
-
-                    // Final fit within remaining space on this page
-                    const maxH = Math.min(absoluteMaxH, H - M - y - 6);
-                    let iw = Math.min(absoluteMaxW, natW);
-                    let ih = (iw * natH) / natW;
-                    if (ih > maxH) { ih = maxH; iw = (ih * natW) / natH; }
-
-                    const xOff   = (TW - iw) / 2; // centre horizontally
-                    const format = blob.data.type === 'image/png' ? 'PNG' : 'JPEG';
-                    doc.addImage(b64, format, M + xOff, y, iw, ih);
-                    y += ih + 6;
-                } catch(e) { console.error('PDF image error:', e); }
-            }
+            if (blob) await _pdfAddImage(doc, blob, node, W, H, M, TW, y, () => { addPageNum(); doc.addPage(); pageNum++; y = M; }, (newY) => { y = newY; });
             continue;
         }
 
-        // Headings
-        if (tag === 'h1') {
-            y += 4;
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
-            const ls = doc.splitTextToSize(node.innerText || '', TW);
-            ls.forEach(l => { checkNewPage(12); doc.text(l, M, y); y += 12; });
-            y += 4;
-            continue;
-        }
-        if (tag === 'h2') {
-            y += 3;
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
-            const ls = doc.splitTextToSize(node.innerText || '', TW);
-            ls.forEach(l => { checkNewPage(9); doc.text(l, M, y); y += 9; });
-            y += 3;
-            continue;
-        }
-        if (tag === 'h3') {
-            y += 2;
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
-            const ls = doc.splitTextToSize(node.innerText || '', TW);
-            ls.forEach(l => { checkNewPage(7); doc.text(l, M, y); y += 7; });
-            y += 2;
-            continue;
-        }
+        if (tag === 'h1') { y += 4; doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(12);doc.text(l,M,y);y+=12;}); y+=4; continue; }
+        if (tag === 'h2') { y += 3; doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(9);doc.text(l,M,y);y+=9;}); y+=3; continue; }
+        if (tag === 'h3') { y += 2; doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(7);doc.text(l,M,y);y+=7;}); y+=2; continue; }
 
-        // Blockquote
         if (tag === 'blockquote') {
-            doc.setFont('helvetica', 'italic'); doc.setFontSize(11);
-            doc.setTextColor(90, 69, 48);
-            const ls = doc.splitTextToSize(node.innerText || '', TW - 8);
-            ls.forEach(l => { checkNewPage(6); doc.text(l, M + 6, y); y += 6; });
-            doc.setTextColor(0);
-            y += 3;
-            continue;
+            doc.setFont('helvetica','italic'); doc.setFontSize(11); doc.setTextColor(90,69,48);
+            doc.splitTextToSize(node.innerText||'',TW-8).forEach(l=>{checkNewPage(6);doc.text(l,M+6,y);y+=6;});
+            doc.setTextColor(0); y+=3; continue;
         }
 
-        // Lists
         if (tag === 'ul' || tag === 'ol') {
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-            const items = node.querySelectorAll('li');
+            doc.setFont('helvetica','normal'); doc.setFontSize(11);
             let idx = 1;
-            items.forEach(li => {
+            node.querySelectorAll('li').forEach(li => {
                 const bullet = tag === 'ol' ? `${idx++}.` : '•';
-                const text   = li.innerText.trim();
-                const ls     = doc.splitTextToSize(text, TW - 10);
-                ls.forEach((l, i) => {
+                doc.splitTextToSize(li.innerText.trim(), TW-10).forEach((l,i) => {
                     checkNewPage(6);
-                    if (i === 0) doc.text(bullet, M + 2, y);
-                    doc.text(l, M + 8, y);
-                    y += 6;
+                    if (i===0) doc.text(bullet, M+2, y);
+                    doc.text(l, M+8, y); y+=6;
                 });
             });
-            y += 3;
-            continue;
+            y+=3; continue;
         }
 
-        // Block wrapping an image (e.g. <p><img></p>) — render the image
+        // Block wrapping an image
         const innerImg = node.querySelector('img[data-img-id]');
         if (innerImg) {
             const blob = await dbGet('images', innerImg.getAttribute('data-img-id'));
             if (blob) {
                 try {
-                    const b64        = await blobToB64(blob.data);
-                    const dimensions = await getImageDimensions(innerImg);
-                    const natW = dimensions.width;
-                    const natH = dimensions.height;
-                    const absoluteMaxW = TW, absoluteMaxH = 140;
-                    let iw = Math.min(absoluteMaxW, natW);
-                    let ih = (iw * natH) / natW;
-                    if (ih > absoluteMaxH) { ih = absoluteMaxH; iw = (ih * natW) / natH; }
-                    if (y + ih + 6 > H - M) { addPageNum(); doc.addPage(); pageNum++; y = M; }
-                    const xOff   = (TW - iw) / 2;
-                    const format = blob.data.type === 'image/png' ? 'PNG' : 'JPEG';
-                    doc.addImage(b64, format, M + xOff, y, iw, ih);
-                    y += ih + 6;
-                } catch(e) { console.error('PDF wrapped image error:', e); }
+                    const b64 = await blobToB64(blob.data);
+                    const { width: nw, height: nh } = await getImageDimensions(innerImg);
+                    const mxH = 140;
+                    let iw = Math.min(TW, nw), ih = (iw*nh)/nw;
+                    if (ih > mxH) { ih = mxH; iw = (ih*nw)/nh; }
+                    if (y+ih+6 > H-M) { addPageNum(); doc.addPage(); pageNum++; y=M; }
+                    doc.addImage(b64, blob.data.type==='image/png'?'PNG':'JPEG', M+(TW-iw)/2, y, iw, ih);
+                    y += ih+6;
+                } catch(e) { console.error('PDF image error:', e); }
             }
             continue;
         }
 
-        // Paragraph — handle inline bold/italic/underline
         const text = node.innerText ? node.innerText.trim() : '';
-        if (!text) { y += 4; continue; }
-
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
-        const ls = doc.splitTextToSize(text, TW);
-        ls.forEach(l => { checkNewPage(6); doc.text(l, M, y); y += 6; });
-        y += 3;
+        if (!text) { y+=4; continue; }
+        doc.setFont('helvetica','normal'); doc.setFontSize(11);
+        doc.splitTextToSize(text, TW).forEach(l => { checkNewPage(6); doc.text(l,M,y); y+=6; });
+        y+=3;
     }
 
     addPageNum();
     doc.save(getTitle() + '.pdf');
+}
+
+async function _pdfAddImage(doc, blob, node, W, H, M, TW, yIn, newPageFn, setY) {
+    try {
+        const b64 = await blobToB64(blob.data);
+        const { width: nw, height: nh } = await getImageDimensions(node);
+        const mxW = TW, mxH = 140;
+        let iw = Math.min(mxW, nw), ih = (iw*nh)/nw;
+        if (ih > mxH) { ih = mxH; iw = (ih*nw)/nh; }
+        if (yIn + ih + 6 > H - M) { newPageFn(); yIn = M; }
+        doc.addImage(b64, blob.data.type==='image/png'?'PNG':'JPEG', M+(TW-iw)/2, yIn, iw, ih);
+        setY(yIn + ih + 6);
+    } catch(e) { console.error('PDF image error:', e); }
 }
 
 function blobToB64(blob) {
@@ -1012,7 +1271,7 @@ function getTitle() {
 
 function download(blob, name) {
     const a = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
+    a.href = URL.createObjectURL(blob);
     a.download = name;
     a.style.display = 'none';
     document.body.appendChild(a);

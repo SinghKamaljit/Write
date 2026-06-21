@@ -1,9 +1,9 @@
 /* =====================================================
-   PageCraft Service Worker
-   Cache version: pagecraft-v2
+   WriteNow Service Worker
+   Cache version: writenow-v1
    ===================================================== */
 
-const CACHE = 'pagecraft-v2';
+const CACHE = 'writenow-v1';
 
 const ASSETS = [
   './',
@@ -17,7 +17,7 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js'
 ];
 
-// ── INSTALL — cache everything upfront ──────────────────
+// ── INSTALL ─────────────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
@@ -45,7 +45,6 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        // Only cache valid responses for same-origin or CDN
         if (
           response &&
           response.status === 200 &&
@@ -56,7 +55,6 @@ self.addEventListener('fetch', event => {
         }
         return response;
       }).catch(() => {
-        // Offline fallback — return the main app page
         if (event.request.mode === 'navigate') {
           return caches.match('./index.html');
         }
