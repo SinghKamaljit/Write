@@ -350,12 +350,12 @@
 <!-- FORMAT BAR — always visible, always reachable -->
 <div id="format-bar">
     <span class="fmt-label">Format</span>
-    <button class="f-btn f-bold"   id="btn-bold"   title="Bold"      onclick="toggleFormat('bold')"><b>B</b></button>
-    <button class="f-btn f-italic" id="btn-italic" title="Italic"    onclick="toggleFormat('italic')"><i>I</i></button>
-    <button class="f-btn f-under"  id="btn-under"  title="Underline" onclick="toggleFormat('underline')"><u>U</u></button>
+    <button class="f-btn f-bold"   id="btn-bold"   title="Bold"      onmousedown="event.preventDefault(); toggleFormat('bold');"><b>B</b></button>
+    <button class="f-btn f-italic" id="btn-italic" title="Italic"    onmousedown="event.preventDefault(); toggleFormat('italic');"><i>I</i></button>
+    <button class="f-btn f-under"  id="btn-under"  title="Underline" onmousedown="event.preventDefault(); toggleFormat('underline');"><u>U</u></button>
     <div class="fmt-sep"></div>
-    <button class="f-btn" style="font-size:0.85rem;width:44px" title="Heading" onclick="toggleHeading()">H</button>
-    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" title="Quote" onclick="toggleQuote()">"</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px" title="Heading" onmousedown="event.preventDefault(); toggleHeading();">H</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" title="Quote" onmousedown="event.preventDefault(); toggleQuote();">"</button>
 </div>
 
 <!-- SCROLL CANVAS — pages live here -->
@@ -376,11 +376,11 @@
 <!-- BOTTOM TOOLBAR -->
 <div id="bottom-toolbar">
     <div class="tool-row">
-        <button class="t-btn" onclick="insertImage()" title="Add image">📷 Photo</button>
-        <button class="t-btn" onclick="insertList('ul')">• List</button>
-        <button class="t-btn" onclick="insertList('ol')">1. List</button>
-        <button class="t-btn" onclick="undoAction()">↶ Undo</button>
-        <button class="t-btn" onclick="redoAction()">↷ Redo</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); insertImage();" title="Add image">📷 Photo</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); insertList('ul');">• List</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); insertList('ol');">1. List</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); undoAction();">↶ Undo</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); redoAction();">↷ Redo</button>
         <button class="t-btn" onclick="importFile()">⬆ Import</button>
         <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
     </div>
@@ -791,6 +791,27 @@ img{max-width:100%;display:block;margin:14px auto}`;
     download(blob, getTitle() + '.html');
 }
 
+// ── IMAGE DIMENSIONS HELPER ───────────────────────────────
+async function getImageDimensions(imgElement) {
+    return new Promise((resolve) => {
+        if (imgElement.complete && imgElement.naturalWidth) {
+            resolve({ width: imgElement.naturalWidth, height: imgElement.naturalHeight });
+            return;
+        }
+        const tempImg = new Image();
+        tempImg.onload = () => {
+            const dims = { width: tempImg.naturalWidth, height: tempImg.naturalHeight };
+            tempImg.src = '';
+            resolve(dims);
+        };
+        tempImg.onerror = () => {
+            tempImg.src = '';
+            resolve({ width: 800, height: 600 }); // safe fallback
+        };
+        tempImg.src = imgElement.src;
+    });
+}
+
 // PDF via jsPDF
 async function exportPDF() {
     closeExport();
@@ -843,14 +864,41 @@ async function exportPDF() {
         if (node.nodeType !== Node.ELEMENT_NODE) continue;
         const tag = node.tagName.toLowerCase();
 
-        // Images
+        // Images — aspect-ratio preserved
         if (tag === 'img' && node.getAttribute('data-img-id')) {
             const blob = await dbGet('images', node.getAttribute('data-img-id'));
             if (blob) {
-                const b64 = await blobToB64(blob.data);
-                const ih  = 55;
-                checkNewPage(ih + 4);
-                try { doc.addImage(b64, 'JPEG', M, y, TW, ih); y += ih + 6; } catch(e) {}
+                try {
+                    const b64        = await blobToB64(blob.data);
+                    const dimensions = await getImageDimensions(node);
+                    const natW = dimensions.width;
+                    const natH = dimensions.height;
+
+                    const absoluteMaxW = TW;
+                    const absoluteMaxH = 140; // mm — tall images won't fill the whole page
+
+                    // Pre-calculate to decide if we need a new page first
+                    let testIw = Math.min(absoluteMaxW, natW);
+                    let testIh = (testIw * natH) / natW;
+                    if (testIh > absoluteMaxH) {
+                        testIh = absoluteMaxH;
+                        testIw = (testIh * natW) / natH;
+                    }
+                    if (y + testIh + 6 > H - M) {
+                        addPageNum(); doc.addPage(); pageNum++; y = M;
+                    }
+
+                    // Final fit within remaining space on this page
+                    const maxH = Math.min(absoluteMaxH, H - M - y - 6);
+                    let iw = Math.min(absoluteMaxW, natW);
+                    let ih = (iw * natH) / natW;
+                    if (ih > maxH) { ih = maxH; iw = (ih * natW) / natH; }
+
+                    const xOff   = (TW - iw) / 2; // centre horizontally
+                    const format = blob.data.type === 'image/png' ? 'PNG' : 'JPEG';
+                    doc.addImage(b64, format, M + xOff, y, iw, ih);
+                    y += ih + 6;
+                } catch(e) { console.error('PDF image error:', e); }
             }
             continue;
         }
