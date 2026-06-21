@@ -1,12 +1,13 @@
 /* =====================================================
    PageCraft Service Worker
-   Cache version: pagecraft-v1
+   Cache version: pagecraft-v2
    ===================================================== */
 
-const CACHE = 'pagecraft-v1';
+const CACHE = 'pagecraft-v2';
 
 const ASSETS = [
-  './wb7.html',
+  './',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -57,7 +58,7 @@ self.addEventListener('fetch', event => {
       }).catch(() => {
         // Offline fallback — return the main app page
         if (event.request.mode === 'navigate') {
-          return caches.match('./wb7.html');
+          return caches.match('./index.html');
         }
       });
     })

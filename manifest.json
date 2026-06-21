@@ -2,7 +2,7 @@
   "name": "PageCraft — Book Writer",
   "short_name": "PageCraft",
   "description": "A simple A4 book writer. Type, format, add photos, export.",
-  "start_url": "./wb7.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
