@@ -960,6 +960,30 @@ async function exportPDF() {
             continue;
         }
 
+        // Block wrapping an image (e.g. <p><img></p>) — render the image
+        const innerImg = node.querySelector('img[data-img-id]');
+        if (innerImg) {
+            const blob = await dbGet('images', innerImg.getAttribute('data-img-id'));
+            if (blob) {
+                try {
+                    const b64        = await blobToB64(blob.data);
+                    const dimensions = await getImageDimensions(innerImg);
+                    const natW = dimensions.width;
+                    const natH = dimensions.height;
+                    const absoluteMaxW = TW, absoluteMaxH = 140;
+                    let iw = Math.min(absoluteMaxW, natW);
+                    let ih = (iw * natH) / natW;
+                    if (ih > absoluteMaxH) { ih = absoluteMaxH; iw = (ih * natW) / natH; }
+                    if (y + ih + 6 > H - M) { addPageNum(); doc.addPage(); pageNum++; y = M; }
+                    const xOff   = (TW - iw) / 2;
+                    const format = blob.data.type === 'image/png' ? 'PNG' : 'JPEG';
+                    doc.addImage(b64, format, M + xOff, y, iw, ih);
+                    y += ih + 6;
+                } catch(e) { console.error('PDF wrapped image error:', e); }
+            }
+            continue;
+        }
+
         // Paragraph — handle inline bold/italic/underline
         const text = node.innerText ? node.innerText.trim() : '';
         if (!text) { y += 4; continue; }
