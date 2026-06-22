@@ -35,6 +35,17 @@
             --user-line-height: 1.75;
         }
 
+        /* ── DARK MODE ── */
+        body.dark-mode { background: #0e0b08; }
+        body.dark-mode .a4-page { background: #1a1410; box-shadow: 0 4px 24px rgba(0,0,0,0.8); }
+        body.dark-mode [id="editor"] { color: #d4c4a8; }
+        body.dark-mode [id="editor"] h1,
+        body.dark-mode [id="editor"] h2,
+        body.dark-mode [id="editor"] h3 { color: #fef3c7; }
+        body.dark-mode [id="editor"] blockquote { color: #9c8b78; }
+        body.dark-mode [id="editor"]:empty::before { color: #5a4530; }
+        body.dark-mode .page-num-label { color: #4a3828; }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -371,6 +382,26 @@
         }
         .btn-reset:active { background: var(--amber); color: #fff; }
 
+        /* ── TOGGLE SWITCH ── */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; inset: 0;
+            background: #3a2d20; border-radius: 24px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .slider::before {
+            content: '';
+            position: absolute;
+            width: 18px; height: 18px;
+            left: 3px; top: 3px;
+            background: #9c8b78; border-radius: 50%;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .switch input:checked + .slider { background: var(--amber); }
+        .switch input:checked + .slider::before { transform: translateX(20px); background: #fff; }
+
         /* ── PAGE DOTS ── */
         #page-dots {
             position: fixed;
@@ -448,6 +479,17 @@
     <div class="drawer-backdrop" onclick="closeSettings()"></div>
     <div class="drawer-panel">
         <div class="drawer-title">✏️ WriteNow — Preferences</div>
+
+        <div class="setting-row">
+            <div class="setting-label">
+                <span>🌙 Night Mode</span>
+                <span class="setting-desc">Dark page — easy on eyes</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="setting-darkmode" onchange="toggleDarkMode(this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
 
         <div class="setting-row">
             <div class="setting-label">
@@ -540,7 +582,7 @@ let db        = null;
 let dirty     = false;
 let saveTimer = null;
 
-const DEFAULTS = { fontSize: '12pt', lineSpacing: '1.75' };
+const DEFAULTS = { fontSize: '12pt', lineSpacing: '1.75', darkMode: false };
 
 // ── INIT ──────────────────────────────────────────────────
 (async function init() {
@@ -555,15 +597,23 @@ function loadSettings() {
     const cfg = JSON.parse(localStorage.getItem('writenow_settings') || JSON.stringify(DEFAULTS));
     document.getElementById('setting-fontsize').value    = cfg.fontSize;
     document.getElementById('setting-linespacing').value = cfg.lineSpacing;
+    document.getElementById('setting-darkmode').checked  = cfg.darkMode;
     document.documentElement.style.setProperty('--user-font-size',   cfg.fontSize);
     document.documentElement.style.setProperty('--user-line-height', cfg.lineSpacing);
+    if (cfg.darkMode) document.body.classList.add('dark-mode');
 }
 
 function saveSettingsState() {
     localStorage.setItem('writenow_settings', JSON.stringify({
         fontSize:    document.getElementById('setting-fontsize').value,
-        lineSpacing: document.getElementById('setting-linespacing').value
+        lineSpacing: document.getElementById('setting-linespacing').value,
+        darkMode:    document.getElementById('setting-darkmode').checked
     }));
+}
+
+function toggleDarkMode(isDark) {
+    document.body.classList.toggle('dark-mode', isDark);
+    saveSettingsState();
 }
 
 function changeFontSize(size, save = true) {
@@ -579,8 +629,10 @@ function changeLineSpacing(spacing, save = true) {
 function resetToDefaults() {
     document.getElementById('setting-fontsize').value    = DEFAULTS.fontSize;
     document.getElementById('setting-linespacing').value = DEFAULTS.lineSpacing;
+    document.getElementById('setting-darkmode').checked  = DEFAULTS.darkMode;
     changeFontSize(DEFAULTS.fontSize, false);
     changeLineSpacing(DEFAULTS.lineSpacing, false);
+    toggleDarkMode(DEFAULTS.darkMode);
     saveSettingsState();
     repaginate();
 }
@@ -588,8 +640,15 @@ function resetToDefaults() {
 function openSettings()  { document.getElementById('settings-drawer').classList.add('open'); }
 function closeSettings() { document.getElementById('settings-drawer').classList.remove('open'); }
 
-// ── AUTO-PAGINATION ENGINE ────────────────────────────────
+// ── AUTO-PAGINATION ENGINE (word-count) ───────────────────
+// ~300 words per A4 page at 12pt. Scales with font size.
+function wordsPerPage() {
+    const fs = parseFloat(document.getElementById('setting-fontsize').value) || 12;
+    return Math.round(300 * (12 / fs));
+}
+
 function repaginate() {
+    // Save caret offset across whole document
     const selection = window.getSelection();
     let savedOffset = 0;
     let focusInEditor = false;
@@ -608,27 +667,39 @@ function repaginate() {
 
     const sandbox = document.createElement('div');
     sandbox.innerHTML = masterHTML;
+    const nodes = Array.from(sandbox.childNodes).filter(
+        n => n.nodeType === Node.ELEMENT_NODE ||
+             (n.nodeType === Node.TEXT_NODE && n.textContent.trim())
+    );
 
+    const WPP = wordsPerPage();
     canvasEl.innerHTML = '';
 
-    let pageIdx = 1;
-    let pageView = createPageDOMNode(pageIdx);
+    let pageIdx      = 1;
+    let pageView     = createPageDOMNode(pageIdx);
     canvasEl.appendChild(pageView);
     let currentEditor = pageView.querySelector('[id="editor"]');
+    let wordCount     = 0;
 
-    Array.from(sandbox.childNodes).forEach(node => {
-        const cloned = node.cloneNode(true);
-        currentEditor.appendChild(cloned);
+    nodes.forEach(node => {
+        const cloned    = node.cloneNode(true);
+        const nodeWords = (cloned.textContent || '').trim().split(/\s+/).filter(Boolean).length;
 
-        if (currentEditor.scrollHeight > currentEditor.clientHeight) {
-            currentEditor.removeChild(cloned);
+        if (wordCount > 0 && wordCount + nodeWords > WPP) {
             pageIdx++;
             pageView = createPageDOMNode(pageIdx);
             canvasEl.appendChild(pageView);
             currentEditor = pageView.querySelector('[id="editor"]');
-            currentEditor.appendChild(cloned);
+            wordCount = 0;
         }
+
+        currentEditor.appendChild(cloned);
+        wordCount += nodeWords;
     });
+
+    if (!canvasEl.querySelector('.a4-page')) {
+        canvasEl.appendChild(createPageDOMNode(1));
+    }
 
     updateCounter();
     updatePageDots();
@@ -698,15 +769,10 @@ function bindEditorMutationTriggers() {
     });
 }
 
-function handleEditorInputEvent(e) {
+function handleEditorInputEvent() {
     syncMasterBuffer();
     markDirty();
-    const ed = e.currentTarget;
-    if (ed.scrollHeight > ed.clientHeight || masterHTML.length % 15 === 0) {
-        repaginate();
-    } else {
-        updateCounter();
-    }
+    repaginate();
 }
 
 function restoreSelectionState(targetOffset) {
