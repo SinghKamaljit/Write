@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WriteNow</title>
 
-    <!-- ✏️ Pencil icon (SVG favicon) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z' fill='%23b45309'/%3E%3C/svg%3E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1c1410">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
@@ -26,26 +26,25 @@
             --rule:     #e8e0d0;
             --muted:    #9c8b78;
             --toolbar:  #1c1410;
-            --border-ui: #3a2d20;
+            --border-ui:#3a2d20;
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bot: env(safe-area-inset-bottom, 0px);
-            --page-w:   min(210mm, 96vw);
-            --page-h:   calc(var(--page-w) * 1.4142);
-            --user-font-size: 12pt;
+            --user-font-size:   12pt;
             --user-line-height: 1.75;
         }
 
         /* ── DARK MODE ── */
-        body.dark-mode { background: #0e0b08; }
-        body.dark-mode .a4-page { background: #1a1410; box-shadow: 0 4px 24px rgba(0,0,0,0.8); }
-        body.dark-mode [id="editor"] { color: #e8d9c0; caret-color: var(--amber); }
-        body.dark-mode [id="editor"] * { color: #e8d9c0; }
-        body.dark-mode [id="editor"] h1,
-        body.dark-mode [id="editor"] h2,
-        body.dark-mode [id="editor"] h3 { color: #fef3c7; }
-        body.dark-mode [id="editor"] blockquote { color: #9c8b78; border-left-color: var(--amber); }
-        body.dark-mode [id="editor"]:empty::before { color: #5a4530; }
-        body.dark-mode .page-num-label { color: #4a3828; }
+        body.dark { background: #0e0b08; }
+        body.dark #page-card  { background: #1a1410; box-shadow: 0 4px 24px rgba(0,0,0,0.8); }
+        body.dark #editor     { color: #e8d9c0; caret-color: var(--amber); }
+        body.dark #editor *   { color: #e8d9c0; }
+        body.dark #editor h1,
+        body.dark #editor h2,
+        body.dark #editor h3  { color: #fef3c7; }
+        body.dark #editor blockquote { color: #9c8b78; border-left-color: var(--amber); }
+        body.dark #editor:empty::before { color: #5a4530; }
+        body.dark .page-break { border-top-color: #3a2d20; }
+        body.dark .break-label { color: #3a2d20; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -68,6 +67,7 @@
             gap: 10px;
             z-index: 50;
             border-bottom: 2px solid var(--amber);
+            flex-shrink: 0;
         }
 
         #doc-title {
@@ -84,7 +84,7 @@
         #doc-title:focus { border-bottom: 1px solid var(--amber); }
 
         #page-counter {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: var(--muted);
             white-space: nowrap;
             font-family: 'Courier New', monospace;
@@ -106,6 +106,7 @@
             align-items: center;
             gap: 6px;
             z-index: 49;
+            flex-shrink: 0;
         }
 
         .fmt-label {
@@ -139,7 +140,7 @@
             color: #fff;
             border-color: var(--amber);
         }
-        .f-btn.f-bold   { font-style: normal; font-weight: 900; }
+        .f-btn.f-bold   { font-weight: 900; }
         .f-btn.f-italic { font-style: italic; font-weight: 400; }
         .f-btn.f-under  { text-decoration: underline; }
 
@@ -156,45 +157,45 @@
             overflow-y: auto;
             overflow-x: hidden;
             background: #2a2118;
-            padding: 20px 0 12px;
+            padding: 20px 0 80px;
             -webkit-overflow-scrolling: touch;
         }
 
-        /* ── A4 PAGE CARD ── */
-        .a4-page {
-            width: var(--page-w);
-            height: var(--page-h);
+        /* ── PAGE CARD — single card, grows with content ── */
+        #page-card {
+            width: min(210mm, 96vw);
             background: var(--page);
-            margin: 0 auto 24px;
+            margin: 0 auto;
             border-radius: 2px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
-            padding: 20mm 20mm 24mm;
-            position: relative;
-            overflow: hidden;
+            padding: 16mm 20mm 20mm;
+            min-height: calc(min(210mm, 96vw) * 1.4142);
         }
 
-        .page-num-label {
+        /* ── VISUAL PAGE BREAKS — drawn over content, no DOM split ── */
+        .page-break {
+            border: none;
+            border-top: 2px dashed #ddd;
+            margin: 28px -20mm;
+            position: relative;
+        }
+        .break-label {
             position: absolute;
-            bottom: 8mm;
+            top: -9px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 9pt;
-            color: #bbb;
+            background: var(--page);
+            padding: 0 8px;
+            font-size: 8pt;
+            color: #ccc;
             font-family: 'Courier New', monospace;
             pointer-events: none;
             user-select: none;
+            white-space: nowrap;
         }
 
-        /* ── EDITOR CONTAINER & EDITOR ── */
-        .editor-container {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-
-        #editor, [id="editor"] {
-            width: 100%;
-            height: 100%;
+        /* ── EDITOR ── */
+        #editor {
             outline: none;
             font-family: Georgia, 'Times New Roman', serif;
             font-size: var(--user-font-size);
@@ -205,29 +206,30 @@
             hyphens: auto;
             -webkit-hyphens: auto;
             caret-color: var(--amber);
+            min-height: 60vh;
         }
 
-        [id="editor"]:empty::before {
+        #editor:empty::before {
             content: attr(data-placeholder);
             color: #c0b09a;
             pointer-events: none;
             font-style: italic;
         }
 
-        [id="editor"] h1 { font-size: 22pt; margin: 0 0 14px; font-family: Georgia, serif; font-weight: 700; line-height: 1.3; }
-        [id="editor"] h2 { font-size: 16pt; margin: 16px 0 10px; font-weight: 700; line-height: 1.4; }
-        [id="editor"] h3 { font-size: 13pt; margin: 14px 0 8px; font-weight: 700; }
-        [id="editor"] p  { margin: 0 0 10px; }
-        [id="editor"] blockquote {
+        #editor h1 { font-size: 22pt; margin: 0 0 14px; font-family: Georgia, serif; font-weight: 700; line-height: 1.3; }
+        #editor h2 { font-size: 16pt; margin: 16px 0 10px; font-weight: 700; line-height: 1.4; }
+        #editor h3 { font-size: 13pt; margin: 14px 0 8px; font-weight: 700; }
+        #editor p  { margin: 0 0 10px; }
+        #editor blockquote {
             border-left: 3px solid var(--amber);
             padding-left: 14px;
             margin: 14px 0;
             color: #5a4530;
             font-style: italic;
         }
-        [id="editor"] ul, [id="editor"] ol { padding-left: 22px; margin: 10px 0; }
-        [id="editor"] li { margin-bottom: 4px; }
-        [id="editor"] img { max-width: 100%; height: auto; display: block; margin: 14px auto; border-radius: 2px; }
+        #editor ul, #editor ol { padding-left: 22px; margin: 10px 0; }
+        #editor li  { margin-bottom: 4px; }
+        #editor img { max-width: 100%; height: auto; display: block; margin: 14px auto; border-radius: 2px; }
 
         /* ── BOTTOM TOOLBAR ── */
         #bottom-toolbar {
@@ -235,6 +237,7 @@
             border-top: 1px solid #3a2d20;
             padding: 8px 10px calc(8px + var(--safe-bot));
             z-index: 48;
+            flex-shrink: 0;
         }
 
         .tool-row {
@@ -267,7 +270,7 @@
         .t-btn:active { background: var(--amber); color: #fff; border-color: var(--amber); }
         .t-btn.t-accent { background: var(--amber); color: #fff; border-color: var(--amber); }
 
-        /* ── DRAWERS (export + settings) ── */
+        /* ── DRAWERS ── */
         #export-drawer, #settings-drawer {
             position: fixed;
             inset: 0;
@@ -290,6 +293,8 @@
             border-radius: 18px 18px 0 0;
             padding: 20px 20px calc(20px + var(--safe-bot));
             border-top: 2px solid var(--amber);
+            max-height: 80dvh;
+            overflow-y: auto;
         }
 
         .drawer-title {
@@ -302,7 +307,6 @@
             text-align: center;
         }
 
-        /* export grid */
         .export-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -342,7 +346,6 @@
             font-family: 'Courier New', monospace;
         }
 
-        /* settings rows */
         .setting-row {
             display: flex;
             justify-content: space-between;
@@ -350,13 +353,9 @@
             padding: 12px 0;
             border-bottom: 1px solid #2e2218;
         }
-        .setting-label {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
+        .setting-label { display: flex; flex-direction: column; gap: 2px; }
         .setting-label span:first-child { color: #fef3c7; font-size: 0.9rem; font-family: 'Courier New', monospace; }
-        .setting-desc { font-size: 0.72rem; color: var(--muted); font-family: 'Courier New', monospace; }
+        .setting-desc  { font-size: 0.72rem; color: var(--muted); font-family: 'Courier New', monospace; }
 
         .settings-select {
             background: #2e2218;
@@ -383,7 +382,6 @@
         }
         .btn-reset:active { background: var(--amber); color: #fff; }
 
-        /* ── TOGGLE SWITCH ── */
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
@@ -403,32 +401,14 @@
         .switch input:checked + .slider { background: var(--amber); }
         .switch input:checked + .slider::before { transform: translateX(20px); background: #fff; }
 
-        /* ── PAGE DOTS ── */
-        #page-dots {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 6px;
-            z-index: 47;
-            pointer-events: none;
-        }
-
-        /* ── PRINT STYLES ── */
+        /* ── PRINT ── */
         @media print {
             body { background: white; }
-            header, #format-bar, #bottom-toolbar, #export-drawer, #settings-drawer, #page-dots { display: none !important; }
-            #scroll-canvas { overflow: visible; padding: 0; }
-            .a4-page {
-                box-shadow: none;
-                border-radius: 0;
-                margin: 0;
-                page-break-after: always;
-                width: 210mm;
-                height: 297mm;
-                padding: 20mm 18mm;
-            }
+            header, #format-bar, #bottom-toolbar, #export-drawer, #settings-drawer { display: none !important; }
+            #scroll-canvas { overflow: visible; padding: 0; background: white; }
+            #page-card { box-shadow: none; border-radius: 0; margin: 0; padding: 20mm 18mm; width: 210mm; }
+            .page-break { border-top: 1px solid #ccc; page-break-after: always; }
+            .break-label { display: none; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -439,37 +419,44 @@
 <header>
     <span contenteditable="true" id="doc-title" spellcheck="false">My Document</span>
     <span id="page-counter">~1 p</span>
-    <span id="save-badge">●</span>
+    <span id="save-badge">✓</span>
 </header>
 
 <!-- FORMAT BAR -->
 <div id="format-bar">
     <span class="fmt-label">Format</span>
-    <button class="f-btn f-bold"   id="btn-bold"   title="Bold"      onmousedown="event.preventDefault(); toggleFormat('bold');"><b>B</b></button>
-    <button class="f-btn f-italic" id="btn-italic" title="Italic"    onmousedown="event.preventDefault(); toggleFormat('italic');"><i>I</i></button>
-    <button class="f-btn f-under"  id="btn-under"  title="Underline" onmousedown="event.preventDefault(); toggleFormat('underline');"><u>U</u></button>
+    <button class="f-btn f-bold"   id="btn-bold"   onmousedown="event.preventDefault(); toggleFormat('bold');"><b>B</b></button>
+    <button class="f-btn f-italic" id="btn-italic" onmousedown="event.preventDefault(); toggleFormat('italic');"><i>I</i></button>
+    <button class="f-btn f-under"  id="btn-under"  onmousedown="event.preventDefault(); toggleFormat('underline');"><u>U</u></button>
     <div class="fmt-sep"></div>
-    <button class="f-btn" style="font-size:0.85rem;width:44px" title="Heading" onmousedown="event.preventDefault(); toggleHeading();">H</button>
-    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" title="Quote" onmousedown="event.preventDefault(); toggleQuote();">"</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px" onmousedown="event.preventDefault(); toggleHeading();">H</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" onmousedown="event.preventDefault(); toggleQuote();">"</button>
 </div>
 
-<!-- SCROLL CANVAS — pages built dynamically by repaginate() -->
-<div id="scroll-canvas"></div>
-
-<!-- PAGE DOTS -->
-<div id="page-dots"></div>
+<!-- SCROLL CANVAS -->
+<div id="scroll-canvas">
+    <div id="page-card">
+        <div
+            id="editor"
+            contenteditable="true"
+            spellcheck="true"
+            role="textbox"
+            aria-multiline="true"
+            aria-label="Document editor"
+            data-placeholder="Start writing…"
+        ></div>
+    </div>
+</div>
 
 <!-- BOTTOM TOOLBAR -->
 <div id="bottom-toolbar">
     <div class="tool-row">
-        <button class="t-btn" onmousedown="event.preventDefault(); insertImage();" title="Add image">📷 Photo</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); insertImage();">📷 Photo</button>
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ul');">• List</button>
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ol');">1. List</button>
-        <button class="t-btn" onclick="document.activeElement?.blur()">⌨️ Done</button>
-        <button class="t-btn" onclick="focusEditor()" title="Jump to writing area">✏️ Write</button>
-        <button class="t-btn" onclick="prevPage()">◀</button>
-        <button class="t-btn" onclick="nextPage()">▶</button>
-        <span id="word-count" class="t-btn" style="cursor:default;opacity:0.75;">0 w</span>
+        <button class="t-btn" id="btn-done"  onclick="document.activeElement?.blur()">⌨️ Done</button>
+        <button class="t-btn" onmousedown="event.preventDefault(); focusEditor();">✏️ Write</button>
+        <span   id="word-count" class="t-btn" style="cursor:default;opacity:0.75;">0 w</span>
         <button class="t-btn" id="btn-copy-all" onmousedown="event.preventDefault(); copyAll();">📋 Copy</button>
         <button class="t-btn" onclick="importFile()">⬆ Import</button>
         <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
@@ -524,10 +511,10 @@
 
         <button class="btn-reset" id="btn-new-doc" onclick="newDocStep1()" style="margin-top:8px;border-color:#7a3a2a;color:#e0a090;">📄 New Document</button>
         <div id="new-doc-confirm" style="display:none;margin-top:8px;background:#2a1a14;border:1px solid #7a3a2a;border-radius:8px;padding:12px;font-family:'Courier New',monospace;">
-            <div style="font-size:0.78rem;color:#e0a090;margin-bottom:10px;">⚠️ This will erase your current document. Tap confirm to continue.</div>
+            <div style="font-size:0.78rem;color:#e0a090;margin-bottom:10px;">⚠️ This will erase your current document.</div>
             <div style="display:flex;gap:8px;">
                 <button onclick="newDocConfirm()" style="flex:1;background:#7a2a1a;border:1px solid #a03020;color:#fff;padding:10px;border-radius:7px;font-family:'Courier New',monospace;font-size:0.82rem;cursor:pointer;">✓ Confirm</button>
-                <button onclick="newDocCancel()" style="flex:1;background:#2e2218;border:1px solid #4a3828;color:#9c8b78;padding:10px;border-radius:7px;font-family:'Courier New',monospace;font-size:0.82rem;cursor:pointer;">✕ Cancel</button>
+                <button onclick="newDocCancel()"  style="flex:1;background:#2e2218;border:1px solid #4a3828;color:#9c8b78;padding:10px;border-radius:7px;font-family:'Courier New',monospace;font-size:0.82rem;cursor:pointer;">✕ Cancel</button>
             </div>
         </div>
 
@@ -542,23 +529,19 @@
         <div class="drawer-title">Export / Save As</div>
         <div class="export-grid">
             <button class="exp-btn" onclick="exportPDF()">
-                <span class="ext">📄</span>
-                PDF
+                <span class="ext">📄</span>PDF
                 <span class="lbl">Print-ready A4</span>
             </button>
             <button class="exp-btn" onclick="exportTXT()">
-                <span class="ext">📝</span>
-                TXT
+                <span class="ext">📝</span>TXT
                 <span class="lbl">Plain text</span>
             </button>
             <button class="exp-btn" onclick="exportHTML()">
-                <span class="ext">🌐</span>
-                HTML
+                <span class="ext">🌐</span>HTML
                 <span class="lbl">Web page</span>
             </button>
             <button class="exp-btn" onclick="window.print()">
-                <span class="ext">🖨️</span>
-                Print
+                <span class="ext">🖨️</span>Print
                 <span class="lbl">Browser print</span>
             </button>
         </div>
@@ -566,36 +549,38 @@
     </div>
 </div>
 
-<!-- Hidden inputs -->
+<!-- Hidden file inputs -->
 <input type="file" id="img-picker"  accept="image/*"        style="display:none" onchange="handleImageFile(event)">
 <input type="file" id="file-picker" accept=".txt,.html,.md" style="display:none" onchange="handleImportFile(event)">
 
 <script>
 /* =========================================================
-   WriteNow ✏️
-   Mobile-first A4 book writer — auto-pagination edition
+   WriteNow ✏️  —  Single-editor rebuild
+   One contenteditable div. Visual page breaks only.
+   Cursor is fully native. Return key just works.
    ========================================================= */
 
 // ── SERVICE WORKER ────────────────────────────────────────
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
         .then(() => console.log('SW registered'))
-        .catch(e => console.log('SW registration skipped:', e.message));
+        .catch(e => console.log('SW skipped:', e.message));
 }
 
-// Master HTML buffer — single source of truth for all content
-let masterHTML = '<h1>Chapter One</h1><p></p>';
-
-const canvasEl = document.getElementById('scroll-canvas');
-const saveEl   = document.getElementById('save-badge');
-const pageEl   = document.getElementById('page-counter');
-const titleEl  = document.getElementById('doc-title');
+// ── ELEMENTS ──────────────────────────────────────────────
+const editorEl  = document.getElementById('editor');
+const titleEl   = document.getElementById('doc-title');
+const saveEl    = document.getElementById('save-badge');
+const pageEl    = document.getElementById('page-counter');
+const pageCard  = document.getElementById('page-card');
 
 let db        = null;
 let dirty     = false;
 let saveTimer = null;
+let breakTimer= null;
 
 const DEFAULTS = { fontSize: '12pt', lineSpacing: '1.75', darkMode: false };
+const WORDS_PER_PAGE = 300; // at 12pt; scales with font size
 
 // ── INIT ──────────────────────────────────────────────────
 (async function init() {
@@ -603,6 +588,7 @@ const DEFAULTS = { fontSize: '12pt', lineSpacing: '1.75', darkMode: false };
     await openDB();
     await loadDraft();
     bindEvents();
+    editorEl.focus();
 })();
 
 // ── SETTINGS ──────────────────────────────────────────────
@@ -613,7 +599,7 @@ function loadSettings() {
     document.getElementById('setting-darkmode').checked  = cfg.darkMode;
     document.documentElement.style.setProperty('--user-font-size',   cfg.fontSize);
     document.documentElement.style.setProperty('--user-line-height', cfg.lineSpacing);
-    if (cfg.darkMode) document.body.classList.add('dark-mode');
+    if (cfg.darkMode) document.body.classList.add('dark');
 }
 
 function saveSettingsState() {
@@ -625,523 +611,216 @@ function saveSettingsState() {
 }
 
 function toggleDarkMode(isDark) {
-    document.body.classList.toggle('dark-mode', isDark);
+    document.body.classList.toggle('dark', isDark);
     saveSettingsState();
 }
 
-function changeFontSize(size, save = true) {
+function changeFontSize(size) {
     document.documentElement.style.setProperty('--user-font-size', size);
-    if (save) { saveSettingsState(); repaginate(); }
+    saveSettingsState();
+    scheduleBreakUpdate();
 }
 
-function changeLineSpacing(spacing, save = true) {
+function changeLineSpacing(spacing) {
     document.documentElement.style.setProperty('--user-line-height', spacing);
-    if (save) { saveSettingsState(); repaginate(); }
+    saveSettingsState();
+    scheduleBreakUpdate();
 }
 
 function resetToDefaults() {
     document.getElementById('setting-fontsize').value    = DEFAULTS.fontSize;
     document.getElementById('setting-linespacing').value = DEFAULTS.lineSpacing;
     document.getElementById('setting-darkmode').checked  = DEFAULTS.darkMode;
-    changeFontSize(DEFAULTS.fontSize, false);
-    changeLineSpacing(DEFAULTS.lineSpacing, false);
-    toggleDarkMode(DEFAULTS.darkMode);
+    document.documentElement.style.setProperty('--user-font-size',   DEFAULTS.fontSize);
+    document.documentElement.style.setProperty('--user-line-height', DEFAULTS.lineSpacing);
+    document.body.classList.remove('dark');
     saveSettingsState();
-    repaginate();
+    scheduleBreakUpdate();
 }
 
 function openSettings()  { document.getElementById('settings-drawer').classList.add('open'); }
-function closeSettings() { document.getElementById('settings-drawer').classList.remove('open'); }
+function closeSettings() {
+    document.getElementById('settings-drawer').classList.remove('open');
+    document.getElementById('new-doc-confirm').style.display = 'none';
+    document.getElementById('btn-new-doc').style.display = '';
+}
 
-// ── AUTO-PAGINATION ENGINE (word-count) ───────────────────
-// ~300 words per A4 page at 12pt. Scales with font size.
+// ── PAGE BREAK RENDERER ───────────────────────────────────
+// Counts words in the editor, inserts visual <hr> dividers
+// every N words. These are purely presentational — NOT part
+// of the saved HTML. They are stripped before saving.
+
 function wordsPerPage() {
     const fs = parseFloat(document.getElementById('setting-fontsize').value) || 12;
-    return Math.round(300 * (12 / fs));
+    return Math.round(WORDS_PER_PAGE * (12 / fs));
 }
 
-function repaginate() {
-    // Save caret offset across whole document
-    const selection = window.getSelection();
-    let savedOffset = 0;
-    let focusInEditor = false;
+function getEditorHTML() {
+    // Return innerHTML with page-break HRs stripped out
+    const clone = editorEl.cloneNode(true);
+    clone.querySelectorAll('.page-break').forEach(el => el.remove());
+    return clone.innerHTML;
+}
 
-    if (selection.rangeCount > 0 && canvasEl.contains(selection.focusNode)) {
-        focusInEditor = true;
-        const range = selection.getRangeAt(0);
-        const activeEd = getActiveEditor();
-        if (activeEd) {
-            const preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(activeEd);
-            preCaretRange.setEnd(range.endContainer, range.endOffset);
-            savedOffset = preCaretRange.toString().length;
-        }
-    }
+function scheduleBreakUpdate() {
+    clearTimeout(breakTimer);
+    breakTimer = setTimeout(updatePageBreaks, 600);
+}
 
-    const sandbox = document.createElement('div');
-    sandbox.innerHTML = masterHTML;
-    const nodes = Array.from(sandbox.childNodes).filter(
-        n => n.nodeType === Node.ELEMENT_NODE ||
-             (n.nodeType === Node.TEXT_NODE && n.textContent.trim())
-    );
+function updatePageBreaks() {
+    // Save caret position before touching the DOM
+    const savedPos = saveCaretPos(editorEl);
 
+    // Strip existing visual breaks
+    editorEl.querySelectorAll('.page-break').forEach(el => el.remove());
+
+    // Walk child nodes counting words, insert a break every WPP words
     const WPP = wordsPerPage();
-    canvasEl.innerHTML = '';
+    let wordCount = 0;
+    let pageNum   = 1;
+    const children = Array.from(editorEl.childNodes);
 
-    let pageIdx      = 1;
-    let pageView     = createPageDOMNode(pageIdx);
-    canvasEl.appendChild(pageView);
-    let currentEditor = pageView.querySelector('[id="editor"]');
-    let wordCount     = 0;
+    for (const child of children) {
+        const text  = child.textContent || '';
+        const words = text.trim().split(/\s+/).filter(Boolean).length;
+        if (words === 0) continue;
 
-    // Helper: add a paragraph node, splitting across pages if it exceeds WPP
-    function addParagraphContent(paragraphNode) {
-        const text  = paragraphNode.textContent || '';
-        const words = text.trim().split(/\s+/).filter(Boolean);
-
-        if (words.length <= WPP) {
-            // Short enough — add whole node as-is
-            if (wordCount > 0 && wordCount + words.length > WPP) {
-                pageIdx++;
-                pageView = createPageDOMNode(pageIdx);
-                canvasEl.appendChild(pageView);
-                currentEditor = pageView.querySelector('[id="editor"]');
-                wordCount = 0;
-            }
-            currentEditor.appendChild(paragraphNode.cloneNode(true));
-            wordCount += words.length;
-            return;
+        if (wordCount > 0 && wordCount + words > WPP) {
+            // Insert visual break before this child
+            pageNum++;
+            const hr = document.createElement('hr');
+            hr.className = 'page-break';
+            hr.contentEditable = 'false';
+            const lbl = document.createElement('span');
+            lbl.className = 'break-label';
+            lbl.textContent = `— page ${pageNum} —`;
+            hr.appendChild(lbl);
+            editorEl.insertBefore(hr, child);
+            wordCount = 0;
         }
-
-        // Long paragraph — split by sentence into page-sized chunks
-        const sentences = text.match(/[^.!?||]+[.!?||]*/g) || [text];
-        let chunk = [], chunkWords = 0;
-
-        function flushChunk() {
-            if (!chunk.length) return;
-            const p = document.createElement('p');
-            p.textContent = chunk.join(' ');
-            currentEditor.appendChild(p);
-            wordCount += chunkWords;
-            chunk = []; chunkWords = 0;
-        }
-
-        for (const sentence of sentences) {
-            const sw = sentence.trim().split(/\s+/).filter(Boolean).length;
-            if (chunkWords > 0 && chunkWords + sw > WPP) {
-                flushChunk();
-                pageIdx++;
-                pageView = createPageDOMNode(pageIdx);
-                canvasEl.appendChild(pageView);
-                currentEditor = pageView.querySelector('[id="editor"]');
-                wordCount = 0;
-            }
-            chunk.push(sentence);
-            chunkWords += sw;
-        }
-        flushChunk();
+        wordCount += words;
     }
 
-    nodes.forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE) {
-            const text = node.textContent.trim();
-            if (!text) return;
-            const p = document.createElement('p');
-            p.textContent = text;
-            addParagraphContent(p);
-            return;
-        }
-
-        const tag = node.tagName ? node.tagName.toLowerCase() : '';
-
-        // Block elements that should never be split
-        if (['h1','h2','h3','blockquote','ul','ol','img'].includes(tag)) {
-            const nw = (node.textContent || '').trim().split(/\s+/).filter(Boolean).length;
-            if (wordCount > 0 && wordCount + nw > WPP) {
-                pageIdx++;
-                pageView = createPageDOMNode(pageIdx);
-                canvasEl.appendChild(pageView);
-                currentEditor = pageView.querySelector('[id="editor"]');
-                wordCount = 0;
-            }
-            currentEditor.appendChild(node.cloneNode(true));
-            wordCount += nw;
-            return;
-        }
-
-        // Paragraphs and divs — split if needed
-        if (tag === 'p' || tag === 'div' || tag === '') {
-            addParagraphContent(node);
-        } else {
-            // Unknown element — clone as-is
-            const nw = (node.textContent || '').trim().split(/\s+/).filter(Boolean).length;
-            if (wordCount > 0 && wordCount + nw > WPP) {
-                pageIdx++;
-                pageView = createPageDOMNode(pageIdx);
-                canvasEl.appendChild(pageView);
-                currentEditor = pageView.querySelector('[id="editor"]');
-                wordCount = 0;
-            }
-            currentEditor.appendChild(node.cloneNode(true));
-            wordCount += nw;
-        }
-    });
-
-    if (!canvasEl.querySelector('.a4-page')) {
-        canvasEl.appendChild(createPageDOMNode(1));
-    }
-
-    updateCounter();
-    updatePageDots();
-    bindEditorMutationTriggers();
-
-    if (focusInEditor) restoreSelectionState(savedOffset);
+    updateCounter(pageNum);
+    restoreCaretPos(editorEl, savedPos);
 }
 
-function createPageDOMNode(index) {
-    const pageCard = document.createElement('div');
-    pageCard.className = 'a4-page';
-    pageCard.id = `page-${index}`;
+// ── WORD COUNT + PAGE COUNTER ─────────────────────────────
+function updateCounter(pageCount) {
+    const html  = getEditorHTML();
+    const words = (html.replace(/<[^>]+>/g, ' ').match(/\S+/g) || []).length;
+    const pages = pageCount || Math.max(1, Math.ceil(words / wordsPerPage()));
 
-    const container = document.createElement('div');
-    container.className = 'editor-container';
-
-    const editorNode = document.createElement('div');
-    editorNode.id = 'editor';
-    editorNode.contentEditable = 'true';
-    editorNode.setAttribute('data-placeholder', index === 1 ? 'Start writing… or paste your text here.' : '');
-    editorNode.setAttribute('role', 'textbox');
-    editorNode.setAttribute('aria-multiline', 'true');
-    editorNode.setAttribute('aria-label', `Document editor page ${index}`);
-    editorNode.setAttribute('spellcheck', 'true');
-
-    const label = document.createElement('span');
-    label.className = 'page-num-label';
-    label.textContent = index;
-
-    container.appendChild(editorNode);
-    pageCard.appendChild(container);
-    pageCard.appendChild(label);
-    return pageCard;
+    pageEl.textContent = pages > 1 ? `${pages} p` : `~1 p`;
+    const wcEl = document.getElementById('word-count');
+    if (wcEl) wcEl.textContent = words === 1 ? '1 w' : `${words} w`;
 }
 
-function getActiveEditor() {
+// ── CARET SAVE / RESTORE ──────────────────────────────────
+// Uses character offset from start of editor text content.
+// Robust enough for Android Chrome without crossing page dividers.
+
+function saveCaretPos(root) {
     const sel = window.getSelection();
-    if (!sel.rangeCount) return canvasEl.querySelector('[id="editor"]');
-    let node = sel.focusNode;
-    while (node && node !== canvasEl) {
-        if (node.id === 'editor' && node.contentEditable === 'true') return node;
-        node = node.parentNode;
-    }
-    return canvasEl.querySelector('[id="editor"]');
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    if (!root.contains(range.startContainer)) return null;
+    const pre = range.cloneRange();
+    pre.selectNodeContents(root);
+    pre.setEnd(range.startContainer, range.startOffset);
+    return pre.toString().length;
 }
 
-function syncMasterBuffer() {
-    let compiled = '';
-    canvasEl.querySelectorAll('[id="editor"]').forEach(ed => { compiled += ed.innerHTML; });
-    masterHTML = DOMPurify.sanitize(compiled);
-}
-
-function bindEditorMutationTriggers() {
-    canvasEl.querySelectorAll('[id="editor"]').forEach(ed => {
-        ed.removeEventListener('input', handleEditorInputEvent);
-        ed.addEventListener('input', handleEditorInputEvent);
-
-        ed.removeEventListener('paste', handleEditorPasteEvent);
-        ed.addEventListener('paste', handleEditorPasteEvent);
-
-        ed.removeEventListener('keyup',    updateFormatState);
-        ed.addEventListener('keyup',    updateFormatState);
-        ed.removeEventListener('mouseup',  updateFormatState);
-        ed.addEventListener('mouseup',  updateFormatState);
-        ed.removeEventListener('touchend', updateFormatState);
-        ed.addEventListener('touchend', updateFormatState);
-    });
-    // Scroll active editor into view when keyboard opens on mobile
-    document.addEventListener('focusin', e => {
-        if (e.target.closest('[contenteditable="true"]')) {
-            setTimeout(() => {
-                e.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            }, 350);
+function restoreCaretPos(root, offset) {
+    if (offset === null || offset === undefined) return;
+    const sel = window.getSelection();
+    if (!sel) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode: n => {
+            // Skip text inside .page-break elements
+            let p = n.parentNode;
+            while (p && p !== root) {
+                if (p.classList && p.classList.contains('page-break')) return NodeFilter.FILTER_REJECT;
+                p = p.parentNode;
+            }
+            return NodeFilter.FILTER_ACCEPT;
         }
-    });
-}
+    }, false);
 
-function handleEditorInputEvent() {
-    syncMasterBuffer();
-    markDirty();
-    repaginate();
-}
-
-function restoreSelectionState(targetOffset) {
-    const editors = canvasEl.querySelectorAll('[id="editor"]');
-    let accumulated = 0;
-    const range = document.createRange();
-    const sel   = window.getSelection();
-
-    for (let ed of editors) {
-        const len = ed.innerText.length;
-        if (accumulated + len >= targetOffset || ed === editors[editors.length - 1]) {
-            let localOffset = Math.max(0, targetOffset - accumulated);
-            let walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT, null, false);
-            let node = walker.nextNode(), chars = 0, placed = false;
-
-            if (!node) {
-                ed.focus();
-                try { range.selectNodeContents(ed); range.collapse(false); sel.removeAllRanges(); sel.addRange(range); } catch(e){}
-                break;
-            }
-
-            while (node) {
-                const nl = node.textContent.length;
-                if (chars + nl >= localOffset) {
-                    ed.focus();
-                    try { range.setStart(node, localOffset - chars); range.collapse(true); sel.removeAllRanges(); sel.addRange(range); } catch(e){}
-                    placed = true;
-                    break;
-                }
-                chars += nl;
-                node = walker.nextNode();
-            }
-            if (!placed) {
-                ed.focus();
-                try { range.selectNodeContents(ed); range.collapse(false); sel.removeAllRanges(); sel.addRange(range); } catch(e){}
-            }
-            break;
+    let chars = 0, node = walker.nextNode();
+    while (node) {
+        const len = node.textContent.length;
+        if (chars + len >= offset) {
+            try {
+                const range = document.createRange();
+                range.setStart(node, offset - chars);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } catch(e) {}
+            return;
         }
-        accumulated += len;
+        chars += len;
+        node = walker.nextNode();
     }
-}
-
-// ── NAVIGATION ────────────────────────────────────────────
-function getActivePage() {
-    const pages = canvasEl.querySelectorAll('.a4-page');
-    let current = 1;
-    pages.forEach((p, i) => {
-        const r = p.getBoundingClientRect();
-        if (r.top <= window.innerHeight / 2 && r.bottom >= window.innerHeight / 2) current = i + 1;
-    });
-    return current;
-}
-
-function prevPage() {
-    const c = getActivePage();
-    if (c > 1) document.getElementById(`page-${c - 1}`)?.scrollIntoView({ behavior: 'smooth' });
-    setTimeout(updatePageDots, 400);
-}
-
-function nextPage() {
-    const c = getActivePage();
-    const total = canvasEl.querySelectorAll('.a4-page').length;
-    if (c < total) document.getElementById(`page-${c + 1}`)?.scrollIntoView({ behavior: 'smooth' });
-    setTimeout(updatePageDots, 400);
-}
-
-function updatePageDots() {
-    const container = document.getElementById('page-dots');
-    if (!container) return;
-    const total   = canvasEl.querySelectorAll('.a4-page').length;
-    const current = getActivePage();
-    container.innerHTML = '';
-    for (let i = 0; i < total; i++) {
-        const dot = document.createElement('span');
-        const active = i === current - 1;
-        dot.style.cssText = `width:${active ? '12px' : '8px'};height:8px;border-radius:4px;` +
-            `background:${active ? 'var(--amber)' : 'var(--muted)'};transition:all 0.3s;display:inline-block;`;
-        container.appendChild(dot);
-    }
-}
-
-// ── PAGE COUNTER + WORD COUNT ─────────────────────────────
-function updateCounter() {
-    const total   = canvasEl.querySelectorAll('.a4-page').length;
-    const current = getActivePage();
-    pageEl.textContent = total > 1 ? `${current}/${total}` : `~${total} p`;
-
-    const words = (masterHTML.replace(/<[^>]+>/g, ' ').match(/\S+/g) || []).length;
-    const wc = document.getElementById('word-count');
-    if (wc) wc.textContent = words === 1 ? '1 w' : `${words} w`;
-}
-
-// ── INDEXEDDB ─────────────────────────────────────────────
-function openDB() {
-    return new Promise((res, rej) => {
-        const req = indexedDB.open('writenow_v1', 1);
-        req.onupgradeneeded = e => {
-            const d = e.target.result;
-            if (!d.objectStoreNames.contains('draft'))  d.createObjectStore('draft',  { keyPath: 'id' });
-            if (!d.objectStoreNames.contains('images')) d.createObjectStore('images', { keyPath: 'id' });
-        };
-        req.onsuccess = e => { db = e.target.result; res(); };
-        req.onerror   = e => rej(e.target.error);
-    });
-}
-
-function dbPut(store, obj) {
-    return new Promise((res, rej) => {
-        const tx = db.transaction(store, 'readwrite');
-        const req = tx.objectStore(store).put(obj);
-        req.onsuccess = () => res();
-        req.onerror   = e => rej(e.target.error);
-    });
-}
-
-function dbGet(store, key) {
-    return new Promise(res => {
-        const tx = db.transaction(store, 'readonly');
-        const req = tx.objectStore(store).get(key);
-        req.onsuccess = () => res(req.result || null);
-        req.onerror   = () => res(null);
-    });
-}
-
-// ── SAVE ──────────────────────────────────────────────────
-function markDirty() {
-    dirty = true;
-    saveEl.textContent = '●';
-    saveEl.style.color = '#d97706';
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveDraft, 1200);
-}
-
-async function saveDraft() {
-    if (!db || !dirty) return;
+    // Fallback: end of editor
     try {
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = masterHTML;
-        wrapper.querySelectorAll('img[data-img-id]').forEach(img => { img.src = ''; });
-        await dbPut('draft', {
-            id:    'current',
-            title: titleEl.innerText.trim() || 'My Document',
-            html:  DOMPurify.sanitize(wrapper.innerHTML),
-            saved: Date.now()
-        });
-        dirty = false;
-        saveEl.textContent = '✓';
-        saveEl.style.color = '#86a86b';
-    } catch(e) {
-        saveEl.textContent = '✗';
-        saveEl.style.color = '#ef4444';
-    }
-}
-
-async function loadDraft() {
-    const data = await dbGet('draft', 'current');
-    if (!data) {
-        masterHTML = '<h1>Chapter One</h1><p></p>';
-        repaginate();
-        return;
-    }
-    titleEl.innerText = data.title || 'My Document';
-
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = DOMPurify.sanitize(data.html || '');
-
-    for (const img of wrapper.querySelectorAll('img[data-img-id]')) {
-        const blob = await dbGet('images', img.getAttribute('data-img-id'));
-        if (blob) img.src = URL.createObjectURL(blob.data);
-        else img.remove();
-    }
-
-    masterHTML = wrapper.innerHTML;
-    repaginate();
-    saveEl.textContent = '✓';
-    saveEl.style.color = '#86a86b';
+        const range = document.createRange();
+        range.selectNodeContents(root);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } catch(e) {}
 }
 
 // ── EVENTS ────────────────────────────────────────────────
 function bindEvents() {
     titleEl.addEventListener('input', markDirty);
 
-    canvasEl.addEventListener('scroll', () => {
-        updatePageDots();
-        updateCounter();
-    }, { passive: true });
-
-    document.addEventListener('keydown', e => {
-        const m = e.ctrlKey || e.metaKey;
-        if (m && e.key === 's')                    { e.preventDefault(); saveDraft(); }
-        if (m && e.key === 'b')                    { e.preventDefault(); toggleFormat('bold'); }
-        if (m && e.key === 'i')                    { e.preventDefault(); toggleFormat('italic'); }
-        if (m && e.key === 'u')                    { e.preventDefault(); toggleFormat('underline'); }
-    });
-
-    setupTitleHandler();
-}
-
-// ── TITLE HANDLER ─────────────────────────────────────────
-function setupTitleHandler() {
-    // Blur on title → move cursor to end of first editor
-    titleEl.addEventListener('blur', function() {
-        const editor = canvasEl.querySelector('[id="editor"]');
-        if (!editor) return;
-        const range = document.createRange();
-        const sel   = window.getSelection();
-        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
-        let lastNode = null, node = walker.nextNode();
-        while (node) { lastNode = node; node = walker.nextNode(); }
-        if (lastNode) {
-            range.setStart(lastNode, lastNode.length);
-            range.collapse(true);
-        } else {
-            range.selectNodeContents(editor);
-            range.collapse(false);
-        }
-        sel.removeAllRanges();
-        sel.addRange(range);
-        editor.focus();
-    });
-
-    // Enter in title → jump straight to editor
+    // Title: Enter → jump to editor
     titleEl.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        this.blur();
-        setTimeout(() => {
-            const editor = canvasEl.querySelector('[id="editor"]');
-            if (!editor) return;
-            editor.focus();
-            const range = document.createRange();
-            const sel   = window.getSelection();
-            range.selectNodeContents(editor);
-            range.collapse(false);
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }, 50);
+        editorEl.focus();
+        const range = document.createRange();
+        range.selectNodeContents(editorEl);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    });
+
+    // Editor input — schedule break update and save
+    editorEl.addEventListener('input', function() {
+        markDirty();
+        scheduleBreakUpdate();
+    });
+
+    // Editor paste — clean and reinsert as plain structured HTML
+    editorEl.addEventListener('paste', handlePaste);
+
+    // Format state sync on selection change
+    editorEl.addEventListener('keyup',    updateFormatState);
+    editorEl.addEventListener('mouseup',  updateFormatState);
+    editorEl.addEventListener('touchend', updateFormatState);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+        const m = e.ctrlKey || e.metaKey;
+        if (m && e.key === 's') { e.preventDefault(); saveDraft(); }
+        if (m && e.key === 'b') { e.preventDefault(); toggleFormat('bold'); }
+        if (m && e.key === 'i') { e.preventDefault(); toggleFormat('italic'); }
+        if (m && e.key === 'u') { e.preventDefault(); toggleFormat('underline'); }
     });
 }
 
-// ── FOCUS EDITOR ──────────────────────────────────────────
-function focusEditor() {
-    const editor = canvasEl.querySelector('[id="editor"]');
-    if (!editor) return;
-    haptic(20);
-    editor.focus();
-    const range  = document.createRange();
-    const sel    = window.getSelection();
-    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
-    let lastNode = null, node = walker.nextNode();
-    while (node) { lastNode = node; node = walker.nextNode(); }
-    if (lastNode) {
-        range.setStart(lastNode, lastNode.length);
-        range.collapse(true);
-    } else {
-        range.selectNodeContents(editor);
-        range.collapse(false);
-    }
-    sel.removeAllRanges();
-    sel.addRange(range);
-    setTimeout(() => editor.scrollIntoView({ block: 'center', behavior: 'smooth' }), 100);
-}
-
-function handleEditorPasteEvent(e) {
+// ── PASTE HANDLER ─────────────────────────────────────────
+function handlePaste(e) {
     e.preventDefault();
     const clipData = e.clipboardData || window.clipboardData;
     const html  = clipData.getData('text/html');
     const plain = clipData.getData('text/plain');
 
-    // Build a real DOM fragment — never use createContextualFragment on long text
-    // as Android Chrome silently truncates it
     const frag = document.createDocumentFragment();
 
     if (html) {
@@ -1153,29 +832,19 @@ function handleEditorPasteEvent(e) {
         sandbox.innerHTML = clean;
         while (sandbox.firstChild) frag.appendChild(sandbox.firstChild);
     } else {
-        // Plain text: group lines into paragraphs separated by blank lines
-        // Each non-empty line run becomes one <p>; a blank line is a paragraph break
         const lines = plain.split(/\r?\n/);
         let buffer = [];
-
-        function flushBuffer() {
-            if (buffer.length === 0) return;
+        function flush() {
+            if (!buffer.length) return;
             const p = document.createElement('p');
             p.textContent = buffer.join(' ');
             frag.appendChild(p);
             buffer = [];
         }
-
         lines.forEach(line => {
-            if (line.trim() === '') {
-                flushBuffer();
-            } else {
-                buffer.push(line);
-            }
+            if (line.trim() === '') { flush(); } else { buffer.push(line); }
         });
-        flushBuffer(); // flush last paragraph
-
-        // If nothing was produced (e.g. blank paste), add empty p
+        flush();
         if (!frag.childNodes.length) {
             const p = document.createElement('p');
             p.textContent = plain;
@@ -1192,18 +861,15 @@ function handleEditorPasteEvent(e) {
     sel.removeAllRanges();
     sel.addRange(range);
 
-    syncMasterBuffer();
     markDirty();
-    repaginate();
+    scheduleBreakUpdate();
 }
 
 // ── FORMAT BAR ────────────────────────────────────────────
 function toggleFormat(cmd) {
-    const ed = getActiveEditor();
-    if (ed) ed.focus();
+    editorEl.focus();
     document.execCommand(cmd, false, null);
     updateFormatState();
-    syncMasterBuffer();
     markDirty();
 }
 
@@ -1212,9 +878,10 @@ function toggleHeading() {
     if (!sel.rangeCount) return;
     let node = sel.focusNode;
     if (node && node.nodeType === 3) node = node.parentNode;
-    const activeEd = getActiveEditor();
-    while (node && node.parentNode !== activeEd) node = node.parentNode;
-    if (!node) return;
+    while (node && node.parentNode !== editorEl) node = node.parentNode;
+    if (!node || node === editorEl) return;
+    // skip page-break elements
+    if (node.classList && node.classList.contains('page-break')) return;
     const tag  = node.tagName ? node.tagName.toLowerCase() : 'p';
     const next = tag === 'p' ? 'h1' : tag === 'h1' ? 'h2' : tag === 'h2' ? 'h3' : 'p';
     const newEl = document.createElement(next);
@@ -1223,7 +890,7 @@ function toggleHeading() {
     const r = document.createRange();
     r.selectNodeContents(newEl); r.collapse(false);
     sel.removeAllRanges(); sel.addRange(r);
-    syncMasterBuffer(); markDirty(); repaginate();
+    markDirty(); scheduleBreakUpdate();
 }
 
 function toggleQuote() {
@@ -1231,9 +898,9 @@ function toggleQuote() {
     if (!sel.rangeCount) return;
     let node = sel.focusNode;
     if (node && node.nodeType === 3) node = node.parentNode;
-    const activeEd = getActiveEditor();
-    while (node && node.parentNode !== activeEd) node = node.parentNode;
-    if (!node) return;
+    while (node && node.parentNode !== editorEl) node = node.parentNode;
+    if (!node || node === editorEl) return;
+    if (node.classList && node.classList.contains('page-break')) return;
     if (node.tagName && node.tagName.toLowerCase() === 'blockquote') {
         const p = document.createElement('p');
         p.innerHTML = node.innerHTML;
@@ -1243,7 +910,7 @@ function toggleQuote() {
         bq.innerHTML = node.innerHTML;
         node.replaceWith(bq);
     }
-    syncMasterBuffer(); markDirty(); repaginate();
+    markDirty(); scheduleBreakUpdate();
 }
 
 function updateFormatState() {
@@ -1254,16 +921,13 @@ function updateFormatState() {
 
 // ── LISTS ─────────────────────────────────────────────────
 function insertList(type) {
-    const ed = getActiveEditor();
-    if (ed) ed.focus();
+    editorEl.focus();
     document.execCommand(type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList');
-    syncMasterBuffer(); markDirty(); repaginate();
+    markDirty(); scheduleBreakUpdate();
 }
 
 // ── IMAGES ────────────────────────────────────────────────
-function insertImage() {
-    document.getElementById('img-picker').click();
-}
+function insertImage() { document.getElementById('img-picker').click(); }
 
 async function handleImageFile(e) {
     const file = e.target.files[0];
@@ -1281,16 +945,15 @@ async function handleImageFile(e) {
     img.style.maxWidth = '100%';
 
     const sel = window.getSelection();
-    const activeEd = getActiveEditor();
-    if (sel && sel.rangeCount && activeEd.contains(sel.focusNode)) {
+    if (sel && sel.rangeCount && editorEl.contains(sel.focusNode)) {
         const range = sel.getRangeAt(0);
         range.deleteContents();
         range.insertNode(img);
     } else {
-        activeEd.appendChild(img);
+        editorEl.appendChild(img);
     }
 
-    syncMasterBuffer(); markDirty(); repaginate();
+    markDirty(); scheduleBreakUpdate();
 }
 
 function compressImage(file, maxDim, quality) {
@@ -1315,10 +978,128 @@ function compressImage(file, maxDim, quality) {
     });
 }
 
-// ── IMPORT ────────────────────────────────────────────────
-function importFile() {
-    document.getElementById('file-picker').click();
+// ── FOCUS EDITOR ──────────────────────────────────────────
+function focusEditor() {
+    haptic(20);
+    editorEl.focus();
+    // Place cursor at end
+    const range  = document.createRange();
+    const sel    = window.getSelection();
+    const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT, {
+        acceptNode: n => {
+            let p = n.parentNode;
+            while (p && p !== editorEl) {
+                if (p.classList && p.classList.contains('page-break')) return NodeFilter.FILTER_REJECT;
+                p = p.parentNode;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+        }
+    }, false);
+    let lastNode = null, node = walker.nextNode();
+    while (node) { lastNode = node; node = walker.nextNode(); }
+    if (lastNode) {
+        range.setStart(lastNode, lastNode.length);
+        range.collapse(true);
+    } else {
+        range.selectNodeContents(editorEl);
+        range.collapse(false);
+    }
+    sel.removeAllRanges();
+    sel.addRange(range);
+    setTimeout(() => editorEl.scrollIntoView({ block: 'end', behavior: 'smooth' }), 100);
 }
+
+// ── INDEXEDDB ─────────────────────────────────────────────
+function openDB() {
+    return new Promise((res, rej) => {
+        const req = indexedDB.open('writenow_v1', 1);
+        req.onupgradeneeded = e => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains('draft'))  d.createObjectStore('draft',  { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('images')) d.createObjectStore('images', { keyPath: 'id' });
+        };
+        req.onsuccess = e => { db = e.target.result; res(); };
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+
+function dbPut(store, obj) {
+    return new Promise((res, rej) => {
+        const tx  = db.transaction(store, 'readwrite');
+        const req = tx.objectStore(store).put(obj);
+        req.onsuccess = () => res();
+        req.onerror   = e => rej(e.target.error);
+    });
+}
+
+function dbGet(store, key) {
+    return new Promise(res => {
+        const tx  = db.transaction(store, 'readonly');
+        const req = tx.objectStore(store).get(key);
+        req.onsuccess = () => res(req.result || null);
+        req.onerror   = () => res(null);
+    });
+}
+
+// ── SAVE ──────────────────────────────────────────────────
+function markDirty() {
+    dirty = true;
+    saveEl.textContent = '●';
+    saveEl.style.color = '#d97706';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDraft, 1400);
+}
+
+async function saveDraft() {
+    if (!db || !dirty) return;
+    try {
+        const html = getEditorHTML(); // strips page-break HRs
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+        // Strip live blob URLs before saving (img data-img-id preserved)
+        wrapper.querySelectorAll('img[data-img-id]').forEach(img => { img.src = ''; });
+        await dbPut('draft', {
+            id:    'current',
+            title: titleEl.innerText.trim() || 'My Document',
+            html:  DOMPurify.sanitize(wrapper.innerHTML),
+            saved: Date.now()
+        });
+        dirty = false;
+        saveEl.textContent = '✓';
+        saveEl.style.color = '#86a86b';
+    } catch(e) {
+        saveEl.textContent = '✗';
+        saveEl.style.color = '#ef4444';
+    }
+}
+
+async function loadDraft() {
+    const data = await dbGet('draft', 'current');
+    if (!data) {
+        editorEl.innerHTML = '<p></p>';
+        updateCounter();
+        return;
+    }
+    titleEl.innerText = data.title || 'My Document';
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = DOMPurify.sanitize(data.html || '');
+
+    // Restore image blob URLs
+    for (const img of wrapper.querySelectorAll('img[data-img-id]')) {
+        const blob = await dbGet('images', img.getAttribute('data-img-id'));
+        if (blob) img.src = URL.createObjectURL(blob.data);
+        else img.remove();
+    }
+
+    editorEl.innerHTML = wrapper.innerHTML || '<p></p>';
+    saveEl.textContent = '✓';
+    saveEl.style.color = '#86a86b';
+    updatePageBreaks();
+}
+
+// ── IMPORT ────────────────────────────────────────────────
+function importFile() { document.getElementById('file-picker').click(); }
 
 function handleImportFile(e) {
     const file = e.target.files[0];
@@ -1340,28 +1121,25 @@ function handleImportFile(e) {
                 .filter(Boolean)
                 .join('');
         }
-        masterHTML = DOMPurify.sanitize(html);
+        editorEl.innerHTML = DOMPurify.sanitize(html) || '<p></p>';
         titleEl.innerText = file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
         markDirty();
-        repaginate();
+        scheduleBreakUpdate();
     };
     reader.readAsText(file);
 }
 
-// ── EXPORT DRAWER ─────────────────────────────────────────
+// ── EXPORT ────────────────────────────────────────────────
 function openExport()  { document.getElementById('export-drawer').classList.add('open'); }
 function closeExport() { document.getElementById('export-drawer').classList.remove('open'); }
 
-// TXT
 function exportTXT() {
     closeExport();
     const tmp = document.createElement('div');
-    tmp.innerHTML = masterHTML;
-    const blob = new Blob([tmp.innerText], { type: 'text/plain;charset=utf-8' });
-    download(blob, getTitle() + '.txt');
+    tmp.innerHTML = getEditorHTML();
+    download(new Blob([tmp.innerText], { type: 'text/plain;charset=utf-8' }), getTitle() + '.txt');
 }
 
-// HTML
 function exportHTML() {
     closeExport();
     const fs  = document.getElementById('setting-fontsize').value;
@@ -1372,25 +1150,10 @@ blockquote{border-left:3px solid #b45309;padding-left:14px;font-style:italic;col
 img{max-width:100%;display:block;margin:14px auto}`;
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>${getTitle()}</title><style>${css}</style></head>
-<body><h1>${titleEl.innerText}</h1>${masterHTML}</body></html>`;
+<body><h1>${titleEl.innerText}</h1>${getEditorHTML()}</body></html>`;
     download(new Blob([html], { type: 'text/html;charset=utf-8' }), getTitle() + '.html');
 }
 
-// IMAGE DIMENSIONS HELPER
-async function getImageDimensions(imgEl) {
-    return new Promise(resolve => {
-        if (imgEl.complete && imgEl.naturalWidth) {
-            resolve({ width: imgEl.naturalWidth, height: imgEl.naturalHeight });
-            return;
-        }
-        const tmp = new Image();
-        tmp.onload  = () => { const d = { width: tmp.naturalWidth, height: tmp.naturalHeight }; tmp.src = ''; resolve(d); };
-        tmp.onerror = () => { tmp.src = ''; resolve({ width: 800, height: 600 }); };
-        tmp.src = imgEl.src;
-    });
-}
-
-// PDF via jsPDF — renders from masterHTML (correct for multi-page)
 async function exportPDF() {
     closeExport();
     const { jsPDF } = window.jspdf;
@@ -1417,7 +1180,7 @@ async function exportPDF() {
     }
 
     const sandbox = document.createElement('div');
-    sandbox.innerHTML = masterHTML;
+    sandbox.innerHTML = getEditorHTML();
 
     for (const node of Array.from(sandbox.childNodes)) {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -1425,23 +1188,20 @@ async function exportPDF() {
             if (!t) continue;
             doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
             doc.splitTextToSize(t, TW).forEach(l => { checkNewPage(6); doc.text(l, M, y); y += 6; });
-            y += 3;
-            continue;
+            y += 3; continue;
         }
         if (node.nodeType !== Node.ELEMENT_NODE) continue;
-
         const tag = node.tagName.toLowerCase();
 
-        // Standalone image
         if (tag === 'img' && node.getAttribute('data-img-id')) {
             const blob = await dbGet('images', node.getAttribute('data-img-id'));
-            if (blob) await _pdfAddImage(doc, blob, node, W, H, M, TW, y, () => { addPageNum(); doc.addPage(); pageNum++; y = M; }, (newY) => { y = newY; });
+            if (blob) await pdfAddImage(doc, blob, node, H, M, TW, y, addPageNum, (ny) => { y = ny; pageNum++; });
             continue;
         }
 
-        if (tag === 'h1') { y += 4; doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(12);doc.text(l,M,y);y+=12;}); y+=4; continue; }
-        if (tag === 'h2') { y += 3; doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(9);doc.text(l,M,y);y+=9;}); y+=3; continue; }
-        if (tag === 'h3') { y += 2; doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(7);doc.text(l,M,y);y+=7;}); y+=2; continue; }
+        if (tag === 'h1') { y+=4; doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(12);doc.text(l,M,y);y+=12;}); y+=4; continue; }
+        if (tag === 'h2') { y+=3; doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(9); doc.text(l,M,y);y+=9;}); y+=3; continue; }
+        if (tag === 'h3') { y+=2; doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.splitTextToSize(node.innerText||'',TW).forEach(l=>{checkNewPage(7); doc.text(l,M,y);y+=7;}); y+=2; continue; }
 
         if (tag === 'blockquote') {
             doc.setFont('helvetica','italic'); doc.setFontSize(11); doc.setTextColor(90,69,48);
@@ -1463,46 +1223,33 @@ async function exportPDF() {
             y+=3; continue;
         }
 
-        // Block wrapping an image
         const innerImg = node.querySelector('img[data-img-id]');
         if (innerImg) {
             const blob = await dbGet('images', innerImg.getAttribute('data-img-id'));
-            if (blob) {
-                try {
-                    const b64 = await blobToB64(blob.data);
-                    const { width: nw, height: nh } = await getImageDimensions(innerImg);
-                    const mxH = 140;
-                    let iw = Math.min(TW, nw), ih = (iw*nh)/nw;
-                    if (ih > mxH) { ih = mxH; iw = (ih*nw)/nh; }
-                    if (y+ih+6 > H-M) { addPageNum(); doc.addPage(); pageNum++; y=M; }
-                    doc.addImage(b64, blob.data.type==='image/png'?'PNG':'JPEG', M+(TW-iw)/2, y, iw, ih);
-                    y += ih+6;
-                } catch(e) { console.error('PDF image error:', e); }
-            }
+            if (blob) await pdfAddImage(doc, blob, innerImg, H, M, TW, y, addPageNum, (ny) => { y = ny; pageNum++; });
             continue;
         }
 
         const text = node.innerText ? node.innerText.trim() : '';
-        if (!text) { y+=4; continue; }
+        if (!text) { y += 4; continue; }
         doc.setFont('helvetica','normal'); doc.setFontSize(11);
-        doc.splitTextToSize(text, TW).forEach(l => { checkNewPage(6); doc.text(l,M,y); y+=6; });
-        y+=3;
+        doc.splitTextToSize(text, TW).forEach(l => { checkNewPage(6); doc.text(l, M, y); y += 6; });
+        y += 3;
     }
 
     addPageNum();
     doc.save(getTitle() + '.pdf');
 }
 
-async function _pdfAddImage(doc, blob, node, W, H, M, TW, yIn, newPageFn, setY) {
+async function pdfAddImage(doc, blob, node, H, M, TW, yIn, addPageNum, nextPageFn) {
     try {
         const b64 = await blobToB64(blob.data);
         const { width: nw, height: nh } = await getImageDimensions(node);
-        const mxW = TW, mxH = 140;
-        let iw = Math.min(mxW, nw), ih = (iw*nh)/nw;
-        if (ih > mxH) { ih = mxH; iw = (ih*nw)/nh; }
-        if (yIn + ih + 6 > H - M) { newPageFn(); yIn = M; }
-        doc.addImage(b64, blob.data.type==='image/png'?'PNG':'JPEG', M+(TW-iw)/2, yIn, iw, ih);
-        setY(yIn + ih + 6);
+        const mxH = 140;
+        let iw = Math.min(TW, nw), ih = (iw * nh) / nw;
+        if (ih > mxH) { ih = mxH; iw = (ih * nw) / nh; }
+        if (yIn + ih + 6 > H - M) { addPageNum(); doc.addPage(); nextPageFn(M); yIn = M; }
+        doc.addImage(b64, blob.data.type === 'image/png' ? 'PNG' : 'JPEG', M + (TW - iw) / 2, yIn, iw, ih);
     } catch(e) { console.error('PDF image error:', e); }
 }
 
@@ -1514,43 +1261,25 @@ function blobToB64(blob) {
     });
 }
 
-// ── HAPTIC ────────────────────────────────────────────────
-function haptic(ms = 30) {
-    if (navigator.vibrate) navigator.vibrate(ms);
+async function getImageDimensions(imgEl) {
+    return new Promise(resolve => {
+        if (imgEl.complete && imgEl.naturalWidth) {
+            resolve({ width: imgEl.naturalWidth, height: imgEl.naturalHeight });
+            return;
+        }
+        const tmp = new Image();
+        tmp.onload  = () => { resolve({ width: tmp.naturalWidth, height: tmp.naturalHeight }); tmp.src = ''; };
+        tmp.onerror = () => { resolve({ width: 800, height: 600 }); tmp.src = ''; };
+        tmp.src = imgEl.src;
+    });
 }
-
-// ── SWIPE NAVIGATION ──────────────────────────────────────
-(function bindSwipe() {
-    let startX = 0, startY = 0, startTime = 0;
-    const THRESHOLD = 55;   // min horizontal px
-    const MAX_VERT  = 80;   // max vertical drift allowed
-    const MAX_TIME  = 400;  // ms
-
-    canvasEl.addEventListener('touchstart', e => {
-        const t = e.touches[0];
-        startX = t.clientX;
-        startY = t.clientY;
-        startTime = Date.now();
-    }, { passive: true });
-
-    canvasEl.addEventListener('touchend', e => {
-        const t = e.changedTouches[0];
-        const dx = t.clientX - startX;
-        const dy = Math.abs(t.clientY - startY);
-        const dt = Date.now() - startTime;
-        if (Math.abs(dx) < THRESHOLD || dy > MAX_VERT || dt > MAX_TIME) return;
-        if (dx < 0) { haptic(25); nextPage(); }   // swipe left  → next page
-        else         { haptic(25); prevPage(); }   // swipe right → prev page
-    }, { passive: true });
-})();
 
 // ── COPY ALL ──────────────────────────────────────────────
 function copyAll() {
     const tmp = document.createElement('div');
-    tmp.innerHTML = masterHTML;
+    tmp.innerHTML = getEditorHTML();
     const text = (titleEl.innerText.trim() ? titleEl.innerText.trim() + '\n\n' : '') + tmp.innerText;
-
-    const btn = document.getElementById('btn-copy-all');
+    const btn  = document.getElementById('btn-copy-all');
 
     function onSuccess() {
         haptic(40);
@@ -1558,59 +1287,46 @@ function copyAll() {
         btn.textContent = '✓ Copied';
         btn.style.background = '#4a7a3a';
         btn.style.color = '#fff';
-        setTimeout(() => {
-            btn.textContent = orig;
-            btn.style.background = '';
-            btn.style.color = '';
-        }, 2000);
+        setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; }, 2000);
     }
-
     function onFail() {
         btn.textContent = '✗ Failed';
         setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
     }
-
-    function execCommandFallback() {
+    function fallback() {
         try {
             const ta = document.createElement('textarea');
             ta.value = text;
             ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
             document.body.appendChild(ta);
-            ta.focus();
-            ta.select();
+            ta.focus(); ta.select();
             document.execCommand('copy');
             document.body.removeChild(ta);
             onSuccess();
         } catch(e) { onFail(); }
     }
-
-    // Small timeout so Android does not consider page focus lost
     setTimeout(() => {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(onSuccess).catch(execCommandFallback);
-        } else {
-            execCommandFallback();
-        }
+            navigator.clipboard.writeText(text).then(onSuccess).catch(fallback);
+        } else { fallback(); }
     }, 50);
 }
 
-// ── NEW DOCUMENT ───────────────────────────────────────────
+// ── NEW DOCUMENT ──────────────────────────────────────────
 function newDocStep1() {
     document.getElementById('new-doc-confirm').style.display = 'block';
     document.getElementById('btn-new-doc').style.display = 'none';
 }
-
 function newDocCancel() {
     document.getElementById('new-doc-confirm').style.display = 'none';
-    document.getElementById('btn-new-doc').style.display = 'block';
+    document.getElementById('btn-new-doc').style.display = '';
 }
-
 async function newDocConfirm() {
     haptic(50);
     newDocCancel();
     closeSettings();
-    masterHTML = '<h1>Chapter One</h1><p></p>';
-    titleEl.innerText = 'My Document';
+    editorEl.innerHTML = '<p></p>';
+    titleEl.innerText  = 'My Document';
     if (db) {
         try {
             const tx = db.transaction('draft', 'readwrite');
@@ -1620,11 +1336,12 @@ async function newDocConfirm() {
     dirty = false;
     saveEl.textContent = '✓';
     saveEl.style.color = '#86a86b';
-    repaginate();
-    const firstEd = canvasEl.querySelector('[id="editor"]');
-    if (firstEd) { firstEd.focus(); }
+    editorEl.querySelectorAll('.page-break').forEach(el => el.remove());
+    updateCounter();
+    editorEl.focus();
 }
 
+// ── HELPERS ───────────────────────────────────────────────
 function getTitle() {
     return (titleEl.innerText.trim() || 'document').replace(/\s+/g, '_');
 }
@@ -1637,6 +1354,10 @@ function download(blob, name) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+}
+
+function haptic(ms = 30) {
+    if (navigator.vibrate) navigator.vibrate(ms);
 }
 </script>
 </body>
