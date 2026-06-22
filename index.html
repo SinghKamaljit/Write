@@ -467,8 +467,7 @@
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ol');">1. List</button>
         <button class="t-btn" onclick="prevPage()">◀</button>
         <button class="t-btn" onclick="nextPage()">▶</button>
-        <button class="t-btn" onmousedown="event.preventDefault(); undoAction();">↶ Undo</button>
-        <button class="t-btn" onmousedown="event.preventDefault(); redoAction();">↷ Redo</button>
+        <span id="word-count" class="t-btn" style="cursor:default;opacity:0.75;">0 w</span>
         <button class="t-btn" onclick="importFile()">⬆ Import</button>
         <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
         <button class="t-btn" onclick="openSettings()">⚙️</button>
@@ -855,11 +854,15 @@ function updatePageDots() {
     }
 }
 
-// ── PAGE COUNTER (your new logic) ─────────────────────────
+// ── PAGE COUNTER + WORD COUNT ─────────────────────────────
 function updateCounter() {
     const total   = canvasEl.querySelectorAll('.a4-page').length;
     const current = getActivePage();
     pageEl.textContent = total > 1 ? `${current}/${total}` : `~${total} p`;
+
+    const words = (masterHTML.replace(/<[^>]+>/g, ' ').match(/\S+/g) || []).length;
+    const wc = document.getElementById('word-count');
+    if (wc) wc.textContent = words === 1 ? '1 w' : `${words} w`;
 }
 
 // ── INDEXEDDB ─────────────────────────────────────────────
@@ -963,9 +966,6 @@ function bindEvents() {
         if (m && e.key === 'b')                    { e.preventDefault(); toggleFormat('bold'); }
         if (m && e.key === 'i')                    { e.preventDefault(); toggleFormat('italic'); }
         if (m && e.key === 'u')                    { e.preventDefault(); toggleFormat('underline'); }
-        if (m && e.key === 'z' && !e.shiftKey)     { e.preventDefault(); undoAction(); }
-        if (m && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redoAction(); }
-        if (m && e.key === 'y')                    { e.preventDefault(); redoAction(); }
     });
 }
 
@@ -1061,20 +1061,6 @@ function insertList(type) {
     const ed = getActiveEditor();
     if (ed) ed.focus();
     document.execCommand(type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList');
-    syncMasterBuffer(); markDirty(); repaginate();
-}
-
-// ── UNDO / REDO ───────────────────────────────────────────
-function undoAction() {
-    const ed = getActiveEditor();
-    if (ed) ed.focus();
-    document.execCommand('undo');
-    syncMasterBuffer(); markDirty(); repaginate();
-}
-function redoAction() {
-    const ed = getActiveEditor();
-    if (ed) ed.focus();
-    document.execCommand('redo');
     syncMasterBuffer(); markDirty(); repaginate();
 }
 
