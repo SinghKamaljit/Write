@@ -466,6 +466,7 @@
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ul');">• List</button>
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ol');">1. List</button>
         <button class="t-btn" onclick="document.activeElement?.blur()">⌨️ Done</button>
+        <button class="t-btn" onclick="focusEditor()" title="Jump to writing area">✏️ Write</button>
         <button class="t-btn" onclick="prevPage()">◀</button>
         <button class="t-btn" onclick="nextPage()">▶</button>
         <span id="word-count" class="t-btn" style="cursor:default;opacity:0.75;">0 w</span>
@@ -693,20 +694,97 @@ function repaginate() {
     let currentEditor = pageView.querySelector('[id="editor"]');
     let wordCount     = 0;
 
-    nodes.forEach(node => {
-        const cloned    = node.cloneNode(true);
-        const nodeWords = (cloned.textContent || '').trim().split(/\s+/).filter(Boolean).length;
+    // Helper: add a paragraph node, splitting across pages if it exceeds WPP
+    function addParagraphContent(paragraphNode) {
+        const text  = paragraphNode.textContent || '';
+        const words = text.trim().split(/\s+/).filter(Boolean);
 
-        if (wordCount > 0 && wordCount + nodeWords > WPP) {
-            pageIdx++;
-            pageView = createPageDOMNode(pageIdx);
-            canvasEl.appendChild(pageView);
-            currentEditor = pageView.querySelector('[id="editor"]');
-            wordCount = 0;
+        if (words.length <= WPP) {
+            // Short enough — add whole node as-is
+            if (wordCount > 0 && wordCount + words.length > WPP) {
+                pageIdx++;
+                pageView = createPageDOMNode(pageIdx);
+                canvasEl.appendChild(pageView);
+                currentEditor = pageView.querySelector('[id="editor"]');
+                wordCount = 0;
+            }
+            currentEditor.appendChild(paragraphNode.cloneNode(true));
+            wordCount += words.length;
+            return;
         }
 
-        currentEditor.appendChild(cloned);
-        wordCount += nodeWords;
+        // Long paragraph — split by sentence into page-sized chunks
+        const sentences = text.match(/[^.!?||]+[.!?||]*/g) || [text];
+        let chunk = [], chunkWords = 0;
+
+        function flushChunk() {
+            if (!chunk.length) return;
+            const p = document.createElement('p');
+            p.textContent = chunk.join(' ');
+            currentEditor.appendChild(p);
+            wordCount += chunkWords;
+            chunk = []; chunkWords = 0;
+        }
+
+        for (const sentence of sentences) {
+            const sw = sentence.trim().split(/\s+/).filter(Boolean).length;
+            if (chunkWords > 0 && chunkWords + sw > WPP) {
+                flushChunk();
+                pageIdx++;
+                pageView = createPageDOMNode(pageIdx);
+                canvasEl.appendChild(pageView);
+                currentEditor = pageView.querySelector('[id="editor"]');
+                wordCount = 0;
+            }
+            chunk.push(sentence);
+            chunkWords += sw;
+        }
+        flushChunk();
+    }
+
+    nodes.forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent.trim();
+            if (!text) return;
+            const p = document.createElement('p');
+            p.textContent = text;
+            addParagraphContent(p);
+            return;
+        }
+
+        const tag = node.tagName ? node.tagName.toLowerCase() : '';
+
+        // Block elements that should never be split
+        if (['h1','h2','h3','blockquote','ul','ol','img'].includes(tag)) {
+            const nw = (node.textContent || '').trim().split(/\s+/).filter(Boolean).length;
+            if (wordCount > 0 && wordCount + nw > WPP) {
+                pageIdx++;
+                pageView = createPageDOMNode(pageIdx);
+                canvasEl.appendChild(pageView);
+                currentEditor = pageView.querySelector('[id="editor"]');
+                wordCount = 0;
+            }
+            currentEditor.appendChild(node.cloneNode(true));
+            wordCount += nw;
+            return;
+        }
+
+        // Paragraphs and divs — split if needed
+        if (tag === 'p' || tag === 'div' || tag === '') {
+            addParagraphContent(node);
+        } else {
+            // Unknown element — clone as-is
+            const nw = (node.textContent || '').trim().split(/\s+/).filter(Boolean).length;
+            if (wordCount > 0 && wordCount + nw > WPP) {
+                pageIdx++;
+                pageView = createPageDOMNode(pageIdx);
+                canvasEl.appendChild(pageView);
+                currentEditor = pageView.querySelector('[id="editor"]');
+                wordCount = 0;
+            }
+            currentEditor.appendChild(node.cloneNode(true));
+            wordCount += nw;
+        }
     });
 
     if (!canvasEl.querySelector('.a4-page')) {
@@ -987,6 +1065,73 @@ function bindEvents() {
         if (m && e.key === 'i')                    { e.preventDefault(); toggleFormat('italic'); }
         if (m && e.key === 'u')                    { e.preventDefault(); toggleFormat('underline'); }
     });
+
+    setupTitleHandler();
+}
+
+// ── TITLE HANDLER ─────────────────────────────────────────
+function setupTitleHandler() {
+    // Blur on title → move cursor to end of first editor
+    titleEl.addEventListener('blur', function() {
+        const editor = canvasEl.querySelector('[id="editor"]');
+        if (!editor) return;
+        const range = document.createRange();
+        const sel   = window.getSelection();
+        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
+        let lastNode = null, node = walker.nextNode();
+        while (node) { lastNode = node; node = walker.nextNode(); }
+        if (lastNode) {
+            range.setStart(lastNode, lastNode.length);
+            range.collapse(true);
+        } else {
+            range.selectNodeContents(editor);
+            range.collapse(false);
+        }
+        sel.removeAllRanges();
+        sel.addRange(range);
+        editor.focus();
+    });
+
+    // Enter in title → jump straight to editor
+    titleEl.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        this.blur();
+        setTimeout(() => {
+            const editor = canvasEl.querySelector('[id="editor"]');
+            if (!editor) return;
+            editor.focus();
+            const range = document.createRange();
+            const sel   = window.getSelection();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }, 50);
+    });
+}
+
+// ── FOCUS EDITOR ──────────────────────────────────────────
+function focusEditor() {
+    const editor = canvasEl.querySelector('[id="editor"]');
+    if (!editor) return;
+    haptic(20);
+    editor.focus();
+    const range  = document.createRange();
+    const sel    = window.getSelection();
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null, false);
+    let lastNode = null, node = walker.nextNode();
+    while (node) { lastNode = node; node = walker.nextNode(); }
+    if (lastNode) {
+        range.setStart(lastNode, lastNode.length);
+        range.collapse(true);
+    } else {
+        range.selectNodeContents(editor);
+        range.collapse(false);
+    }
+    sel.removeAllRanges();
+    sel.addRange(range);
+    setTimeout(() => editor.scrollIntoView({ block: 'center', behavior: 'smooth' }), 100);
 }
 
 function handleEditorPasteEvent(e) {
