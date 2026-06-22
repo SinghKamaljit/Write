@@ -1213,7 +1213,7 @@ async function exportPDF() {
 
         if (tag === 'img' && node.getAttribute('data-img-id')) {
             const blob = await dbGet('images', node.getAttribute('data-img-id'));
-            if (blob) await pdfAddImage(doc, blob, node, H, M, TW, y, addPageNum, (ny) => { y = ny; pageNum++; });
+            if (blob) { y = await pdfAddImage(doc, blob, node, H, M, TW, y, addPageNum, () => { pageNum++; }); }
             continue;
         }
 
@@ -1244,7 +1244,7 @@ async function exportPDF() {
         const innerImg = node.querySelector('img[data-img-id]');
         if (innerImg) {
             const blob = await dbGet('images', innerImg.getAttribute('data-img-id'));
-            if (blob) await pdfAddImage(doc, blob, innerImg, H, M, TW, y, addPageNum, (ny) => { y = ny; pageNum++; });
+            if (blob) { y = await pdfAddImage(doc, blob, innerImg, H, M, TW, y, addPageNum, () => { pageNum++; }); }
             continue;
         }
 
@@ -1259,16 +1259,22 @@ async function exportPDF() {
     doc.save(getTitle() + '.pdf');
 }
 
-async function pdfAddImage(doc, blob, node, H, M, TW, yIn, addPageNum, nextPageFn) {
+// Returns the new y position after placing the image.
+// Caller MUST capture: y = await pdfAddImage(...)
+async function pdfAddImage(doc, blob, node, H, M, TW, yIn, addPageNum, bumpPage) {
     try {
         const b64 = await blobToB64(blob.data);
         const { width: nw, height: nh } = await getImageDimensions(node);
         const mxH = 140;
         let iw = Math.min(TW, nw), ih = (iw * nh) / nw;
         if (ih > mxH) { ih = mxH; iw = (ih * nw) / nh; }
-        if (yIn + ih + 6 > H - M) { addPageNum(); doc.addPage(); nextPageFn(M); yIn = M; }
+        if (yIn + ih + 6 > H - M) { addPageNum(); doc.addPage(); bumpPage(); yIn = M; }
         doc.addImage(b64, blob.data.type === 'image/png' ? 'PNG' : 'JPEG', M + (TW - iw) / 2, yIn, iw, ih);
-    } catch(e) { console.error('PDF image error:', e); }
+        return yIn + ih + 8;
+    } catch(e) {
+        console.error('PDF image error:', e);
+        return yIn;
+    }
 }
 
 function blobToB64(blob) {
