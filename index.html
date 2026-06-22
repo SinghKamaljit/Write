@@ -1241,6 +1241,8 @@ function exportMD() {
 
     download(new Blob([md.trim() + '\n'], { type: 'text/markdown;charset=utf-8' }), getTitle() + '.md');
 }
+
+async function exportPDF() {
     closeExport();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
