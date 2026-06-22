@@ -788,7 +788,8 @@ function bindEditorMutationTriggers() {
         }
     });
 }
-() {
+
+function handleEditorInputEvent() {
     syncMasterBuffer();
     markDirty();
     repaginate();
