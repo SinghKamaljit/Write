@@ -309,7 +309,7 @@
 
         .export-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
         }
 
@@ -420,17 +420,17 @@
     <span contenteditable="true" id="doc-title" spellcheck="false">My Document</span>
     <span id="page-counter">~1 p</span>
     <span id="save-badge">✓</span>
+    <button id="header-gear" onmousedown="event.preventDefault(); openSettings();" style="background:none;border:none;color:#9c8b78;font-size:1.15rem;cursor:pointer;padding:4px 2px;line-height:1;flex-shrink:0;">⚙️</button>
 </header>
 
 <!-- FORMAT BAR -->
 <div id="format-bar">
-    <span class="fmt-label">Format</span>
     <button class="f-btn f-bold"   id="btn-bold"   onmousedown="event.preventDefault(); toggleFormat('bold');"><b>B</b></button>
     <button class="f-btn f-italic" id="btn-italic" onmousedown="event.preventDefault(); toggleFormat('italic');"><i>I</i></button>
     <button class="f-btn f-under"  id="btn-under"  onmousedown="event.preventDefault(); toggleFormat('underline');"><u>U</u></button>
     <div class="fmt-sep"></div>
-    <button class="f-btn" style="font-size:0.85rem;width:44px" onmousedown="event.preventDefault(); toggleHeading();">H</button>
-    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" onmousedown="event.preventDefault(); toggleQuote();">"</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px" onmousedown="event.preventDefault(); saveSelectionForBlock(); toggleHeading();">H</button>
+    <button class="f-btn" style="font-size:0.85rem;width:44px;font-family:Georgia;font-style:italic;color:#9c8b78" onmousedown="event.preventDefault(); saveSelectionForBlock(); toggleQuote();">"</button>
 </div>
 
 <!-- SCROLL CANVAS -->
@@ -460,7 +460,7 @@
         <button class="t-btn" id="btn-copy-all" onmousedown="event.preventDefault(); copyAll();">📋 Copy</button>
         <button class="t-btn" onclick="importFile()">⬆ Import</button>
         <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
-        <button class="t-btn" onclick="openSettings()">⚙️</button>
+
     </div>
 </div>
 
@@ -539,6 +539,10 @@
             <button class="exp-btn" onclick="exportHTML()">
                 <span class="ext">🌐</span>HTML
                 <span class="lbl">Web page</span>
+            </button>
+            <button class="exp-btn" onclick="exportMD()">
+                <span class="ext">🖊️</span>MD
+                <span class="lbl">Markdown file</span>
             </button>
             <button class="exp-btn" onclick="window.print()">
                 <span class="ext">🖨️</span>Print
@@ -891,15 +895,39 @@ function toggleFormat(cmd) {
     markDirty();
 }
 
-function toggleHeading() {
+// ── BLOCK FORMAT SELECTION SAVE ───────────────────────────
+// On Android, tapping a toolbar button can lose the editor
+// selection before the handler fires. We snapshot it on
+// onmousedown (before blur) and use it in the function.
+let _savedBlockNode = null;
+
+function saveSelectionForBlock() {
     const sel = window.getSelection();
-    if (!sel.rangeCount) return;
+    if (!sel || sel.rangeCount === 0) { _savedBlockNode = null; return; }
     let node = sel.focusNode;
     if (node && node.nodeType === 3) node = node.parentNode;
     while (node && node.parentNode !== editorEl) node = node.parentNode;
-    if (!node || node === editorEl) return;
-    // skip page-break elements
+    _savedBlockNode = (node && node !== editorEl) ? node : null;
+}
+
+function getBlockNode() {
+    // First try live selection (desktop / keyboard shortcut path)
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+        let node = sel.focusNode;
+        if (node && node.nodeType === 3) node = node.parentNode;
+        while (node && node.parentNode !== editorEl) node = node.parentNode;
+        if (node && node !== editorEl) return node;
+    }
+    // Fall back to snapshot saved on mousedown (Android tap path)
+    return _savedBlockNode;
+}
+
+function toggleHeading() {
+    const node = getBlockNode();
+    if (!node) return;
     if (node.classList && node.classList.contains('page-break')) return;
+    const sel = window.getSelection();
     const tag  = node.tagName ? node.tagName.toLowerCase() : 'p';
     const next = tag === 'p' ? 'h1' : tag === 'h1' ? 'h2' : tag === 'h2' ? 'h3' : 'p';
     const newEl = document.createElement(next);
@@ -907,27 +935,27 @@ function toggleHeading() {
     node.replaceWith(newEl);
     const r = document.createRange();
     r.selectNodeContents(newEl); r.collapse(false);
-    sel.removeAllRanges(); sel.addRange(r);
+    if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+    _savedBlockNode = newEl;
     markDirty(); scheduleBreakUpdate();
 }
 
 function toggleQuote() {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    let node = sel.focusNode;
-    if (node && node.nodeType === 3) node = node.parentNode;
-    while (node && node.parentNode !== editorEl) node = node.parentNode;
-    if (!node || node === editorEl) return;
+    const node = getBlockNode();
+    if (!node) return;
     if (node.classList && node.classList.contains('page-break')) return;
+    const sel = window.getSelection();
+    let newEl;
     if (node.tagName && node.tagName.toLowerCase() === 'blockquote') {
-        const p = document.createElement('p');
-        p.innerHTML = node.innerHTML;
-        node.replaceWith(p);
+        newEl = document.createElement('p');
+        newEl.innerHTML = node.innerHTML;
+        node.replaceWith(newEl);
     } else {
-        const bq = document.createElement('blockquote');
-        bq.innerHTML = node.innerHTML;
-        node.replaceWith(bq);
+        newEl = document.createElement('blockquote');
+        newEl.innerHTML = node.innerHTML;
+        node.replaceWith(newEl);
     }
+    _savedBlockNode = newEl;
     markDirty(); scheduleBreakUpdate();
 }
 
@@ -1172,7 +1200,47 @@ img{max-width:100%;display:block;margin:14px auto}`;
     download(new Blob([html], { type: 'text/html;charset=utf-8' }), getTitle() + '.html');
 }
 
-async function exportPDF() {
+function exportMD() {
+    closeExport();
+    const sandbox = document.createElement('div');
+    sandbox.innerHTML = getEditorHTML();
+
+    const title = titleEl.innerText.trim();
+    let md = title ? `# ${title}\n\n` : '';
+
+    function nodeToMd(node) {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+        const tag = node.tagName.toLowerCase();
+        const inner = Array.from(node.childNodes).map(nodeToMd).join('');
+
+        if (tag === 'h1') return `# ${inner}\n\n`;
+        if (tag === 'h2') return `## ${inner}\n\n`;
+        if (tag === 'h3') return `### ${inner}\n\n`;
+        if (tag === 'p')  return `${inner}\n\n`;
+        if (tag === 'blockquote') return inner.split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
+        if (tag === 'strong' || tag === 'b') return `**${inner}**`;
+        if (tag === 'em'     || tag === 'i') return `_${inner}_`;
+        if (tag === 'u')  return `<u>${inner}</u>`;
+        if (tag === 'br') return '\n';
+        if (tag === 'ul') {
+            return Array.from(node.querySelectorAll(':scope > li'))
+                .map(li => `- ${li.innerText.trim()}`).join('\n') + '\n\n';
+        }
+        if (tag === 'ol') {
+            return Array.from(node.querySelectorAll(':scope > li'))
+                .map((li, i) => `${i + 1}. ${li.innerText.trim()}`).join('\n') + '\n\n';
+        }
+        if (tag === 'img') return `![image]()\n\n`;
+        return inner;
+    }
+
+    for (const child of Array.from(sandbox.childNodes)) {
+        md += nodeToMd(child);
+    }
+
+    download(new Blob([md.trim() + '\n'], { type: 'text/markdown;charset=utf-8' }), getTitle() + '.md');
+}
     closeExport();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
