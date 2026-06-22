@@ -122,7 +122,7 @@
             border: 1px solid #5a4530;
             color: #fef3c7;
             width: 38px;
-            height: 34px;
+            height: 44px;
             border-radius: 6px;
             font-size: 1rem;
             font-weight: 700;
@@ -257,7 +257,7 @@
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
-            min-height: 40px;
+            min-height: 44px;
             display: flex;
             align-items: center;
             gap: 4px;
@@ -465,9 +465,11 @@
         <button class="t-btn" onmousedown="event.preventDefault(); insertImage();" title="Add image">📷 Photo</button>
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ul');">• List</button>
         <button class="t-btn" onmousedown="event.preventDefault(); insertList('ol');">1. List</button>
+        <button class="t-btn" onclick="document.activeElement?.blur()">⌨️ Done</button>
         <button class="t-btn" onclick="prevPage()">◀</button>
         <button class="t-btn" onclick="nextPage()">▶</button>
         <span id="word-count" class="t-btn" style="cursor:default;opacity:0.75;">0 w</span>
+        <button class="t-btn" id="btn-copy-all" onmousedown="event.preventDefault(); copyAll();">📋 Copy</button>
         <button class="t-btn" onclick="importFile()">⬆ Import</button>
         <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
         <button class="t-btn" onclick="openSettings()">⚙️</button>
@@ -518,6 +520,16 @@
         </div>
 
         <button class="btn-reset" onclick="resetToDefaults()">🔄 Reset to Defaults</button>
+
+        <button class="btn-reset" id="btn-new-doc" onclick="newDocStep1()" style="margin-top:8px;border-color:#7a3a2a;color:#e0a090;">📄 New Document</button>
+        <div id="new-doc-confirm" style="display:none;margin-top:8px;background:#2a1a14;border:1px solid #7a3a2a;border-radius:8px;padding:12px;font-family:'Courier New',monospace;">
+            <div style="font-size:0.78rem;color:#e0a090;margin-bottom:10px;">⚠️ This will erase your current document. Tap confirm to continue.</div>
+            <div style="display:flex;gap:8px;">
+                <button onclick="newDocConfirm()" style="flex:1;background:#7a2a1a;border:1px solid #a03020;color:#fff;padding:10px;border-radius:7px;font-family:'Courier New',monospace;font-size:0.82rem;cursor:pointer;">✓ Confirm</button>
+                <button onclick="newDocCancel()" style="flex:1;background:#2e2218;border:1px solid #4a3828;color:#9c8b78;padding:10px;border-radius:7px;font-family:'Courier New',monospace;font-size:0.82rem;cursor:pointer;">✕ Cancel</button>
+            </div>
+        </div>
+
         <button class="drawer-cancel" onclick="closeSettings()">Close</button>
     </div>
 </div>
@@ -767,9 +779,16 @@ function bindEditorMutationTriggers() {
         ed.removeEventListener('touchend', updateFormatState);
         ed.addEventListener('touchend', updateFormatState);
     });
+    // Scroll active editor into view when keyboard opens on mobile
+    document.addEventListener('focusin', e => {
+        if (e.target.closest('[contenteditable="true"]')) {
+            setTimeout(() => {
+                e.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }, 350);
+        }
+    });
 }
-
-function handleEditorInputEvent() {
+() {
     syncMasterBuffer();
     markDirty();
     repaginate();
@@ -981,14 +1000,26 @@ function handleEditorPasteEvent(e) {
             ALLOWED_ATTR: ['href','src','alt']
         });
     } else {
-        clean = plain
-            .split(/\r?\n\r?\n/)
-            .map(para => {
-                const lines = para.replace(/\r?\n/g, '<br>').trim();
-                return lines ? `<p>${lines}</p>` : '';
-            })
-            .filter(Boolean)
-            .join('');
+        // Split on double newlines for paragraphs; single newlines become <br>
+        const paras = plain.split(/\r?\n\r?\n/);
+        if (paras.length > 1) {
+            clean = paras
+                .map(para => {
+                    const lines = para.replace(/\r?\n/g, '<br>').trim();
+                    return lines ? `<p>${lines}</p>` : '';
+                })
+                .filter(Boolean)
+                .join('');
+        } else {
+            // No double newlines — treat each single newline as a new paragraph
+            clean = plain
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(Boolean)
+                .map(line => `<p>${line}</p>`)
+                .join('');
+            if (!clean) clean = `<p>${plain.trim()}</p>`;
+        }
     }
 
     const range = window.getSelection().getRangeAt(0);
@@ -1316,6 +1347,91 @@ function blobToB64(blob) {
         r.onloadend = () => res(r.result);
         r.readAsDataURL(blob);
     });
+}
+
+// ── HAPTIC ────────────────────────────────────────────────
+function haptic(ms = 30) {
+    if (navigator.vibrate) navigator.vibrate(ms);
+}
+
+// ── SWIPE NAVIGATION ──────────────────────────────────────
+(function bindSwipe() {
+    let startX = 0, startY = 0, startTime = 0;
+    const THRESHOLD = 55;   // min horizontal px
+    const MAX_VERT  = 80;   // max vertical drift allowed
+    const MAX_TIME  = 400;  // ms
+
+    canvasEl.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        startX = t.clientX;
+        startY = t.clientY;
+        startTime = Date.now();
+    }, { passive: true });
+
+    canvasEl.addEventListener('touchend', e => {
+        const t = e.changedTouches[0];
+        const dx = t.clientX - startX;
+        const dy = Math.abs(t.clientY - startY);
+        const dt = Date.now() - startTime;
+        if (Math.abs(dx) < THRESHOLD || dy > MAX_VERT || dt > MAX_TIME) return;
+        if (dx < 0) { haptic(25); nextPage(); }   // swipe left  → next page
+        else         { haptic(25); prevPage(); }   // swipe right → prev page
+    }, { passive: true });
+})();
+
+// ── COPY ALL ──────────────────────────────────────────────
+function copyAll() {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = masterHTML;
+    const text = (titleEl.innerText.trim() ? titleEl.innerText.trim() + '\n\n' : '') + tmp.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        haptic(40);
+        const btn = document.getElementById('btn-copy-all');
+        const orig = btn.textContent;
+        btn.textContent = '✓ Copied';
+        btn.style.background = '#4a7a3a';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+            btn.textContent = orig;
+            btn.style.background = '';
+            btn.style.color = '';
+        }, 2000);
+    }).catch(() => {
+        const btn = document.getElementById('btn-copy-all');
+        btn.textContent = '✗ Failed';
+        setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+    });
+}
+
+// ── NEW DOCUMENT ───────────────────────────────────────────
+function newDocStep1() {
+    document.getElementById('new-doc-confirm').style.display = 'block';
+    document.getElementById('btn-new-doc').style.display = 'none';
+}
+
+function newDocCancel() {
+    document.getElementById('new-doc-confirm').style.display = 'none';
+    document.getElementById('btn-new-doc').style.display = 'block';
+}
+
+async function newDocConfirm() {
+    haptic(50);
+    newDocCancel();
+    closeSettings();
+    masterHTML = '<h1>Chapter One</h1><p></p>';
+    titleEl.innerText = 'My Document';
+    if (db) {
+        try {
+            const tx = db.transaction('draft', 'readwrite');
+            tx.objectStore('draft').delete('current');
+        } catch(e) {}
+    }
+    dirty = false;
+    saveEl.textContent = '✓';
+    saveEl.style.color = '#86a86b';
+    repaginate();
+    const firstEd = canvasEl.querySelector('[id="editor"]');
+    if (firstEd) { firstEd.focus(); }
 }
 
 function getTitle() {
