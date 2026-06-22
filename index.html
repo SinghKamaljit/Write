@@ -991,42 +991,61 @@ function bindEvents() {
 
 function handleEditorPasteEvent(e) {
     e.preventDefault();
-    const html  = (e.clipboardData || window.clipboardData).getData('text/html');
-    const plain = (e.clipboardData || window.clipboardData).getData('text/plain');
+    const clipData = e.clipboardData || window.clipboardData;
+    const html  = clipData.getData('text/html');
+    const plain = clipData.getData('text/plain');
 
-    let clean;
+    // Build a real DOM fragment — never use createContextualFragment on long text
+    // as Android Chrome silently truncates it
+    const frag = document.createDocumentFragment();
+
     if (html) {
-        clean = DOMPurify.sanitize(html, {
+        const clean = DOMPurify.sanitize(html, {
             ALLOWED_TAGS: ['p','br','b','strong','i','em','u','h1','h2','h3','ul','ol','li','blockquote','img','a'],
             ALLOWED_ATTR: ['href','src','alt']
         });
+        const sandbox = document.createElement('div');
+        sandbox.innerHTML = clean;
+        while (sandbox.firstChild) frag.appendChild(sandbox.firstChild);
     } else {
-        // Split on double newlines for paragraphs; single newlines become <br>
-        const paras = plain.split(/\r?\n\r?\n/);
-        if (paras.length > 1) {
-            clean = paras
-                .map(para => {
-                    const lines = para.replace(/\r?\n/g, '<br>').trim();
-                    return lines ? `<p>${lines}</p>` : '';
-                })
-                .filter(Boolean)
-                .join('');
-        } else {
-            // No double newlines — treat each single newline as a new paragraph
-            clean = plain
-                .split(/\r?\n/)
-                .map(line => line.trim())
-                .filter(Boolean)
-                .map(line => `<p>${line}</p>`)
-                .join('');
-            if (!clean) clean = `<p>${plain.trim()}</p>`;
+        // Plain text: group lines into paragraphs separated by blank lines
+        // Each non-empty line run becomes one <p>; a blank line is a paragraph break
+        const lines = plain.split(/\r?\n/);
+        let buffer = [];
+
+        function flushBuffer() {
+            if (buffer.length === 0) return;
+            const p = document.createElement('p');
+            p.textContent = buffer.join(' ');
+            frag.appendChild(p);
+            buffer = [];
+        }
+
+        lines.forEach(line => {
+            if (line.trim() === '') {
+                flushBuffer();
+            } else {
+                buffer.push(line);
+            }
+        });
+        flushBuffer(); // flush last paragraph
+
+        // If nothing was produced (e.g. blank paste), add empty p
+        if (!frag.childNodes.length) {
+            const p = document.createElement('p');
+            p.textContent = plain;
+            frag.appendChild(p);
         }
     }
 
-    const range = window.getSelection().getRangeAt(0);
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
     range.deleteContents();
-    const frag = document.createRange().createContextualFragment(clean);
     range.insertNode(frag);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
 
     syncMasterBuffer();
     markDirty();
@@ -1385,9 +1404,11 @@ function copyAll() {
     const tmp = document.createElement('div');
     tmp.innerHTML = masterHTML;
     const text = (titleEl.innerText.trim() ? titleEl.innerText.trim() + '\n\n' : '') + tmp.innerText;
-    navigator.clipboard.writeText(text).then(() => {
+
+    const btn = document.getElementById('btn-copy-all');
+
+    function onSuccess() {
         haptic(40);
-        const btn = document.getElementById('btn-copy-all');
         const orig = btn.textContent;
         btn.textContent = '✓ Copied';
         btn.style.background = '#4a7a3a';
@@ -1397,11 +1418,35 @@ function copyAll() {
             btn.style.background = '';
             btn.style.color = '';
         }, 2000);
-    }).catch(() => {
-        const btn = document.getElementById('btn-copy-all');
+    }
+
+    function onFail() {
         btn.textContent = '✗ Failed';
         setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
-    });
+    }
+
+    function execCommandFallback() {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            onSuccess();
+        } catch(e) { onFail(); }
+    }
+
+    // Small timeout so Android does not consider page focus lost
+    setTimeout(() => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(execCommandFallback);
+        } else {
+            execCommandFallback();
+        }
+    }, 50);
 }
 
 // ── NEW DOCUMENT ───────────────────────────────────────────
