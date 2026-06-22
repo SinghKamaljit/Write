@@ -574,10 +574,12 @@ const saveEl    = document.getElementById('save-badge');
 const pageEl    = document.getElementById('page-counter');
 const pageCard  = document.getElementById('page-card');
 
-let db        = null;
-let dirty     = false;
-let saveTimer = null;
-let breakTimer= null;
+let db           = null;
+let dirty        = false;
+let saveTimer    = null;
+let breakTimer   = null;
+let userIsTyping = false;
+let typingTimer  = null;
 
 const DEFAULTS = { fontSize: '12pt', lineSpacing: '1.75', darkMode: false };
 const WORDS_PER_PAGE = 300; // at 12pt; scales with font size
@@ -663,11 +665,26 @@ function getEditorHTML() {
 }
 
 function scheduleBreakUpdate() {
+    // Mark user as actively typing — updatePageBreaks will skip
+    // caret restoration while this flag is true
+    userIsTyping = true;
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => { userIsTyping = false; }, 1200);
+
+    // Run the visual break update after a longer pause so we
+    // never interrupt a keystroke sequence (Return included)
     clearTimeout(breakTimer);
-    breakTimer = setTimeout(updatePageBreaks, 600);
+    breakTimer = setTimeout(updatePageBreaks, 1500);
 }
 
 function updatePageBreaks() {
+    // If the user is mid-typing, defer again — never touch caret during input
+    if (userIsTyping) {
+        clearTimeout(breakTimer);
+        breakTimer = setTimeout(updatePageBreaks, 800);
+        return;
+    }
+
     // Save caret position before touching the DOM
     const savedPos = saveCaretPos(editorEl);
 
@@ -702,7 +719,8 @@ function updatePageBreaks() {
     }
 
     updateCounter(pageNum);
-    restoreCaretPos(editorEl, savedPos);
+    // Do not restore caret here — the browser already placed it correctly.
+    // restoreCaretPos is only needed on draft load (called explicitly there).
 }
 
 // ── WORD COUNT + PAGE COUNTER ─────────────────────────────
