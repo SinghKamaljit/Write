@@ -1,9 +1,9 @@
 /* =====================================================
    WriteNow Service Worker
-   Cache version: writenow-v3
+   Cache version: writenow-v4
    ===================================================== */
 
-const CACHE = 'writenow-v3';
+const CACHE = 'writenow-v4';
 
 // Only local assets — CDN handled separately
 const ASSETS = [
