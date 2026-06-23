@@ -107,7 +107,10 @@
             gap: 6px;
             z-index: 49;
             flex-shrink: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
+        #format-bar::-webkit-scrollbar { display: none; }
 
         .fmt-label {
             font-size: 0.65rem;
@@ -143,6 +146,10 @@
         .f-btn.f-bold   { font-weight: 900; }
         .f-btn.f-italic { font-style: italic; font-weight: 400; }
         .f-btn.f-under  { text-decoration: underline; }
+        .f-btn.f-accent { background: var(--amber); color: #1c1410; border-color: var(--amber); font-weight: 700; }
+        .f-btn.f-accent:active { filter: brightness(1.15); }
+        .f-btn.f-done   { color: #4ade80; border-color: #2d6e45; font-size: 1.1rem; font-weight: 700; }
+        .f-btn.f-done:active { background: #2d6e45; color: #fff; }
 
         .fmt-sep {
             width: 1px;
@@ -429,7 +436,14 @@
     <button class="f-btn f-bold"   id="btn-bold"   onmousedown="event.preventDefault(); toggleFormat('bold');"><b>B</b></button>
     <button class="f-btn f-italic" id="btn-italic" onmousedown="event.preventDefault(); toggleFormat('italic');"><i>I</i></button>
     <button class="f-btn f-under"  id="btn-under"  onmousedown="event.preventDefault(); toggleFormat('underline');"><u>U</u></button>
-
+    <div class="fmt-sep"></div>
+    <button class="f-btn" title="Import" onmousedown="event.preventDefault();" onclick="importFile()">↑</button>
+    <button class="f-btn f-accent" title="Export" onmousedown="event.preventDefault(); openExport();">↓</button>
+    <div class="fmt-sep"></div>
+    <button class="f-btn" title="Bullet list" onmousedown="event.preventDefault(); insertList('ul');">≡</button>
+    <button class="f-btn" title="Numbered list" onmousedown="event.preventDefault(); insertList('ol');" style="font-size:0.7rem;font-family:'Courier New',monospace;">1≡</button>
+    <div class="fmt-sep"></div>
+    <button class="f-btn f-done" title="Done — dismiss keyboard" onmousedown="event.preventDefault(); document.activeElement?.blur();">✓</button>
 </div>
 
 <!-- SCROLL CANVAS -->
@@ -450,16 +464,9 @@
 <!-- BOTTOM TOOLBAR -->
 <div id="bottom-toolbar">
     <div class="tool-row">
-        <button class="t-btn" onmousedown="event.preventDefault(); insertImage();">📷 Photo</button>
-        <button class="t-btn" onmousedown="event.preventDefault(); insertList('ul');">• List</button>
-        <button class="t-btn" onmousedown="event.preventDefault(); insertList('ol');">1. List</button>
-        <button class="t-btn" id="btn-done"  onclick="document.activeElement?.blur()">⌨️ Done</button>
-        <button class="t-btn" onmousedown="event.preventDefault(); focusEditor();">✏️ Write</button>
-        <span   id="word-count" class="t-btn" style="cursor:default;opacity:0.75;">0 w</span>
-        <button class="t-btn" id="btn-copy-all" onmousedown="event.preventDefault(); copyAll();">📋 Copy</button>
-        <button class="t-btn" onclick="importFile()">⬆ Import</button>
-        <button class="t-btn t-accent" onclick="openExport()">⬇ Export</button>
-
+        <button class="t-btn" onmousedown="event.preventDefault(); insertImage();">📷 Add Image</button>
+        <span id="word-count" class="t-btn" style="cursor:default;opacity:0.75;">0 w</span>
+        <button class="t-btn" id="btn-copy-all" onmousedown="event.preventDefault(); copyAll();">📋 Copy All</button>
     </div>
 </div>
 
