@@ -83,20 +83,6 @@
         }
         #doc-title:focus { border-bottom: 1px solid var(--amber); }
 
-        #page-counter {
-            font-size: 0.72rem;
-            color: var(--muted);
-            white-space: nowrap;
-            font-family: 'Courier New', monospace;
-        }
-
-        #save-badge {
-            font-size: 0.7rem;
-            color: var(--amber-lt);
-            white-space: nowrap;
-            font-family: 'Courier New', monospace;
-        }
-
         /* ── FORMAT BAR ── */
         #format-bar {
             background: #271e16;
@@ -426,8 +412,6 @@
 <!-- HEADER -->
 <header>
     <span contenteditable="true" id="doc-title" spellcheck="false">My Document</span>
-    <span id="page-counter">~1 p</span>
-    <span id="save-badge">✓</span>
     <button id="header-gear" onmousedown="event.preventDefault(); openSettings();" style="background:none;border:none;color:#9c8b78;font-size:1.15rem;cursor:pointer;padding:4px 2px;line-height:1;flex-shrink:0;">⚙️</button>
 </header>
 
@@ -588,8 +572,8 @@ if ('serviceWorker' in navigator) {
 // ── ELEMENTS ──────────────────────────────────────────────
 const editorEl  = document.getElementById('editor');
 const titleEl   = document.getElementById('doc-title');
-const saveEl    = document.getElementById('save-badge');
-const pageEl    = document.getElementById('page-counter');
+const saveEl    = null; // removed from UI
+const pageEl    = null; // removed from UI
 const pageCard  = document.getElementById('page-card');
 
 let db           = null;
@@ -741,14 +725,11 @@ function updatePageBreaks() {
     // restoreCaretPos is only needed on draft load (called explicitly there).
 }
 
-// ── WORD COUNT + PAGE COUNTER ─────────────────────────────
-function updateCounter(pageCount) {
+// ── WORD COUNT ────────────────────────────────────────────
+function updateCounter() {
     const html  = getEditorHTML();
     const words = (html.replace(/<[^>]+>/g, ' ').match(/\S+/g) || []).length;
-    const pages = pageCount || Math.max(1, Math.ceil(words / wordsPerPage()));
-
-    pageEl.textContent = pages > 1 ? `${pages} p` : `~1 p`;
-    const wcEl = document.getElementById('word-count');
+    const wcEl  = document.getElementById('word-count');
     if (wcEl) wcEl.textContent = words === 1 ? '1 w' : `${words} w`;
 }
 
